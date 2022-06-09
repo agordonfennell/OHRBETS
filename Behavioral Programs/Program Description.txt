@@ -1,0 +1,21 @@
+
+Programs:
+
+- Operant conditioning
+   - options
+      * fixed-ratio
+      * fixed-ratio, incremental
+      * progressive-ratio
+
+- Real-time place testing
+
+- Multi-spout, brief access
+
+- Multi-spout, free-choice
+
+Scripts:
+
+- Trial generator
+
+- read_serial 
+
