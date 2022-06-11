@@ -1,44 +1,56 @@
+// ard_helper_open_sol_multi_spout.ino
+//
+//  Manually open solenoids and set rotation of multi-spout head using one of two methods
+//   open_mode = 0:
+//     - Set rotation by sending deg using serial
+//     - Open solenoids by touching corresponding spout
+//   open_mode = 1:
+//     - Set rotation by manually entering servo_radial_deg below
+//     - Open solenoids by sending spout ID using serial
+//
+// note: program is made to be used with a multi-spout system including linear servo,
+//       rotation servo, and wheel break servo. 
 
+
+/// parameters to adjust ///-----------------------
+boolean open_mode = 0; // 0: touch to open set radial w/ serial, 1: serial to open
+byte servo_radial_deg = 120;
+//-------------------------------------------------
+
+// libraries
 #include <Wire.h>
 #include "Adafruit_MPR121.h"
 #include <Servo.h>
 
-//capicitance sensor
-Adafruit_MPR121 cap = Adafruit_MPR121();
-
-boolean open_mode = 0; // 0: touch to open set radial w/ serial, 1: serial to open
-byte servo_radial_deg = 120;
-
-
+// pins
 static byte pinSol[]   = {5,6,7,8,9};
-boolean stateSol[] = {0, 0, 0, 0, 0};
-byte lick;
-byte serial_lick;
-byte lick_last;
-uint16_t lasttouched = 0;
-uint16_t currtouched = 0;
-
-Servo servo_radial;
-
 static byte pinServo_radial = 41;
 static byte pinServo_retract = 37;
 static byte pinServo_break = 39;
 
-byte serial_state = 0;
+// capicitance sensor
+Adafruit_MPR121 cap = Adafruit_MPR121();
+uint16_t lasttouched = 0;
+uint16_t currtouched = 0;
 
-boolean serial_toggle = 0;
+// vars
+boolean stateSol[] = {0, 0, 0, 0, 0};
+byte lick;
+byte serial_lick;
+
+// servos
+Servo servo_radial;
+
 
 void setup() {
-  // put your setup code here, to run once:
+  Serial.begin(115200);
   
-Serial.begin(115200);
-
-for(uint8_t i = 0; i<=4; i++){
-  pinMode(pinSol[i], OUTPUT);
-}
-
-pinMode(pinServo_retract, OUTPUT);
-pinMode(pinServo_break, OUTPUT);  
+  for(uint8_t i = 0; i<=4; i++){
+    pinMode(pinSol[i], OUTPUT);
+  }
+  
+  pinMode(pinServo_retract, OUTPUT);
+  pinMode(pinServo_break, OUTPUT);  
 
   if (!cap.begin(0x5A)) {
     Serial.println("MPR121 not found, check wiring?");
@@ -70,16 +82,15 @@ void loop() {
    }
    
    if(Serial.available() && open_mode == 0){
-      if(serial_state == 0){
-        int servo_radial_deg = Serial.parseInt();
-        if(servo_radial_deg > 0){
-          Serial.print("Current Deg: "); Serial.println(servo_radial_deg);
-          servo_radial.attach(pinServo_radial);
-          servo_radial.write(servo_radial_deg);
-          delay(500);
-          servo_radial.detach();
-        }
-      }
+    int servo_radial_deg = Serial.parseInt();
+    
+    if(servo_radial_deg > 0){
+      Serial.print("Current Deg: "); Serial.println(servo_radial_deg);
+      servo_radial.attach(pinServo_radial);
+      servo_radial.write(servo_radial_deg);
+      delay(500);
+      servo_radial.detach();
+    }
    }
 
   
