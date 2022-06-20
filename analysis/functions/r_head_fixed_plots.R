@@ -201,8 +201,8 @@ plt_raster <- function(df, x, y, id, facet_x, facet_y, xlab, ylab, plt_y_lims, p
 
     ggplot(aes(event_ts_rel, y_pos, group = event_unique))
 
-  if(is.na(var_color)) {plt <- plt + geom_line(size = 0.25)}
-  if(!is.na(var_color)){plt <- plt + geom_line(size = 0.25, aes(color = !!as.name(var_color)))}
+  if(is.na(var_color)) {plt <- plt + geom_line(size = 0.5)}
+  if(!is.na(var_color)){plt <- plt + geom_line(size = 0.5, aes(color = !!as.name(var_color)))}
 
 
   if(!is.na(plt_scale_color) & !is.na(var_color)){
@@ -218,11 +218,17 @@ plt_raster <- function(df, x, y, id, facet_x, facet_y, xlab, ylab, plt_y_lims, p
   plt <- plt +
     theme_ag01() +
     coord_cartesian(ylim = plt_y_lims, xlim = plt_x_lims, expand = FALSE) +
-    force_panelsizes(rows = unit(plt_dims[1], "cm"),
-                     cols = unit(plt_dims[2], "cm")) +
+    scale_y_continuous(breaks = plt_y_lims) +
+    scale_x_continuous(breaks = plt_x_lims) +
+    theme(panel.spacing = unit(0.5, "lines")) +
     xlab(xlab) +
     ylab(ylab)
 
+  if(sum(!is.na(plt_dims) > 0)){
+      plt <- plt +
+        force_panelsizes(rows = unit(plt_dims[1], "cm"),
+                     cols = unit(plt_dims[2], "cm"))
+  }
 
   plt
 }
@@ -442,8 +448,26 @@ return(plt_combined)
 }
 
 
+return_viridis_scale <- function(df){
+  df <- data_trial %>%
+    pull(solution) %>%
+    unique()
 
+  viridis_scale <- NA
 
+  if(sum(session_solutions %>% str_detect('nacl')) == length(session_solutions)){
+    viridis_scale = 'inferno'
+  }
+
+  if(sum(session_solutions %>% str_detect('sucrose')) == length(session_solutions)){
+    viridis_scale = 'mako'
+  }
+
+  if(sum(session_solutions %>% str_detect('quinine')) == length(session_solutions)){
+    viridis_scale = 'viridis'
+  }
+  return(viridis_scale)
+}
 
 
 

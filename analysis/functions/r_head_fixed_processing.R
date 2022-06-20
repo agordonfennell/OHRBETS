@@ -93,7 +93,7 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
 
 
   # create list of all files within dir_list
-  dir_list <- list.files(dir_raw, pattern="*.csv", full.names=TRUE)
+  dir_list <- list.files(dir_raw, pattern="*.csv")
 
   if(length(dir_list) == 0){
     print("WARNING: No files in dir_raw")
@@ -116,16 +116,14 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
   if(sum(!is.na(manual_experiments)) > 0){
     dir_list <- dir_list[str_detect(dir_list, manual_experiments)]
   }
-
-
-
   # determine files already in dir_processed and remove from dir_list
-  dir_processed_fns <- list.files(dir_processed, pattern="*.csv", full.names=TRUE)
+  dir_processed_fns <- list.files(dir_processed)
 
 
   if(!overwrite){
     for(fn in dir_list){
-      if(sum(str_detect(dir_processed_fns, fn) > 0)){
+
+      if(sum(str_detect(dir_processed_fns, fn %>% str_remove('.csv')) > 0)){
         dir_list <- dir_list[!str_detect(dir_list, fn)]
       }
     }
@@ -136,7 +134,7 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
       print("append override...")
       print(str_c('extracting following files found in dir ', dir_raw))
     } else {
-      print(str_c('extracting following files not found in ', str_c(dir_processed, combined_fn)))
+      print(str_c('extracting following files not found in ', dir_processed))
     }
 
     for(dir in dir_list){
@@ -157,7 +155,7 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
     print(str_c('extracting file: ', file_name))
 
     loop_data <- suppressWarnings( # supress parsing warning
-      read_csv(dir, col_names = c('event_id', 'event_ts'), col_types = cols()) %>%
+      read_csv(str_c(dir_raw, '/', dir), col_names = c('event_id', 'event_ts'), col_types = cols()) %>%
         mutate(file_name = file_name)
     )
 
@@ -425,7 +423,10 @@ generate_trial_ids_multispout <- function(data, param_dynamic, trial_start_id){
     mutate(trial_num = row_number()) %>%   # generate trial_num based on row
     left_join(join_current_pos, by = c("file_name", "trial_num")) %>%
     rename(trial_start_ts = event_ts) %>%
-    select(-event_id_char)
+    select(-event_id_char) %>%
+    group_by(file_name, trial_id) %>%
+    mutate(trial_num_tastant = row_number()) %>%
+    ungroup()
 
   return(trial_ids)
 }
@@ -445,7 +446,7 @@ generate_trial_summary_multispout <- function(data_trial, trial_ids){
 
   # compute trial data summary from data defined in data_trial
   data_trial_summary <- data_trial %>%
-    group_by(file_name, trial_start_ts, trial_num, trial_id) %>%
+    group_by(file_name, trial_start_ts, trial_num, trial_num_tastant, trial_id) %>%
     arrange(file_name, trial_start_ts, event_ts) %>%
     mutate(lick_ili = event_ts - lag(event_ts)) %>%
     summarise(lick_count = n(),
@@ -457,7 +458,7 @@ generate_trial_summary_multispout <- function(data_trial, trial_ids){
 
   # join summary to trial_ids in order to avoid implicit 0s
   data_trial_summary <- data_trial_summary %>%
-    left_join(trial_ids, ., by = c("file_name", "trial_start_ts", "trial_num", "trial_id")) %>%
+    left_join(trial_ids, ., by = c("file_name", "trial_start_ts", "trial_num", 'trial_num_tastant', "trial_id")) %>%
     mutate(lick_count = ifelse(is.na(lick_count), 0, lick_count), # fill in 0s for trials without a lick listed in data_trial
            trial_lick = ifelse(is.na(trial_lick), 0, trial_lick)) # ...
 
@@ -549,10 +550,11 @@ generate_trial_events <- function(data, trial_ids, trial_start_id, events_of_int
     select(file_name, event_id_char, event_ts) %>%
     left_join(trial_ids %>% mutate(event_ts = trial_start_ts), by = c("file_name", "event_ts")) %>%
     arrange(file_name, event_ts) %>%
-    fill(c(trial_num, trial_id, trial_start_ts)) %>%
+    fill(c(trial_num, trial_num_tastant, trial_id, trial_start_ts)) %>%
     filter(!is.na(trial_num)) %>%
     filter(event_id_char %in% events_of_interest) %>%
     mutate(event_ts_rel = event_ts - trial_start_ts)
+
 
   return(data_trial)
 }
