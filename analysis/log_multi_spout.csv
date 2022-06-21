@@ -1,0 +1,236 @@
+date,experiment,cohort,spout,solution,solution_text
+4/1/2022,abb,1,spout01,sucrose05,5% sucrose
+4/1/2022,abb,1,spout02,sucrose10,10% sucrose
+4/1/2022,abb,1,spout03,sucrose30,30% sucrose
+4/1/2022,abb,1,spout04,sucrose20,20% sucrose
+4/1/2022,abb,1,spout05,sucrose00,0% sucrose
+4/4/2022,abb,1,spout01,sucrose05,5% sucrose
+4/4/2022,abb,1,spout02,sucrose10,10% sucrose
+4/4/2022,abb,1,spout03,sucrose30,30% sucrose
+4/4/2022,abb,1,spout04,sucrose20,20% sucrose
+4/4/2022,abb,1,spout05,sucrose00,0% sucrose
+4/5/2022,abb,1,spout01,sucrose20,20% sucrose
+4/5/2022,abb,1,spout02,sucrose30,30% sucrose
+4/5/2022,abb,1,spout03,sucrose05,5% sucrose
+4/5/2022,abb,1,spout04,sucrose10,10% sucrose
+4/5/2022,abb,1,spout05,sucrose00,0% sucrose
+4/6/2022,abb,1,spout01,sucrose30,30% sucrose
+4/6/2022,abb,1,spout02,sucrose10,10% sucrose
+4/6/2022,abb,1,spout03,sucrose20,20% sucrose
+4/6/2022,abb,1,spout04,sucrose00,0% sucrose
+4/6/2022,abb,1,spout05,sucrose05,5% sucrose
+4/7/2022,abb,1,spout01,sucrose00,0% sucrose
+4/7/2022,abb,1,spout02,sucrose05,5% sucrose
+4/7/2022,abb,1,spout03,sucrose10,10% sucrose
+4/7/2022,abb,1,spout04,sucrose20,20% sucrose
+4/7/2022,abb,1,spout05,sucrose30,30% sucrose
+4/14/2022,abb,1,spout01,sucrose00,0% sucrose
+4/14/2022,abb,1,spout02,sucrose05,5% sucrose
+4/14/2022,abb,1,spout03,sucrose10,10% sucrose
+4/14/2022,abb,1,spout04,sucrose20,20% sucrose
+4/14/2022,abb,1,spout05,sucrose30,30% sucrose
+4/15/2022,abb,1,spout01,sucrose10,10% sucrose
+4/15/2022,abb,1,spout02,sucrose00,0% sucrose
+4/15/2022,abb,1,spout03,sucrose30,30% sucrose
+4/15/2022,abb,1,spout04,sucrose05,5% sucrose
+4/15/2022,abb,1,spout05,sucrose20,20% sucrose
+4/16/2022,abb,1,spout01,sucrose00,0% sucrose
+4/16/2022,abb,1,spout02,sucrose05,5% sucrose
+4/16/2022,abb,1,spout03,sucrose10,10% sucrose
+4/16/2022,abb,1,spout04,sucrose20,20% sucrose
+4/16/2022,abb,1,spout05,sucrose30,30% sucrose
+4/18/2022,abb,1,spout01,sucrose05,5% sucrose
+4/18/2022,abb,1,spout02,sucrose20,20% sucrose
+4/18/2022,abb,1,spout03,sucrose00,0% sucrose
+4/18/2022,abb,1,spout04,sucrose30,30% sucrose
+4/18/2022,abb,1,spout05,sucrose10,10% sucrose
+4/19/2022,abb,1,spout01,sucrose30,30% sucrose
+4/19/2022,abb,1,spout02,sucrose10,10% sucrose
+4/19/2022,abb,1,spout03,sucrose20,20% sucrose
+4/19/2022,abb,1,spout04,sucrose00,0% sucrose
+4/19/2022,abb,1,spout05,sucrose05,5% sucrose
+4/20/2022,abb,1,spout01,sucrose20,20% sucrose
+4/20/2022,abb,1,spout02,sucrose30,30% sucrose
+4/20/2022,abb,1,spout03,sucrose05,5% sucrose
+4/20/2022,abb,1,spout04,sucrose10,10% sucrose
+4/20/2022,abb,1,spout05,sucrose00,0% sucrose
+4/21/2022,abb,1,spout01,sucrose00,0% sucrose
+4/21/2022,abb,1,spout02,sucrose05,5% sucrose
+4/21/2022,abb,1,spout03,sucrose10,10% sucrose
+4/21/2022,abb,1,spout04,sucrose20,20% sucrose
+4/21/2022,abb,1,spout05,sucrose30,30% sucrose
+4/22/2022,abb,1,spout01,sucrose10,10% sucrose
+4/22/2022,abb,1,spout02,sucrose00,0% sucrose
+4/22/2022,abb,1,spout03,sucrose30,30% sucrose
+4/22/2022,abb,1,spout04,sucrose05,5% sucrose
+4/22/2022,abb,1,spout05,sucrose20,20% sucrose
+4/25/2022,abb,1,spout01,sucrose05,5% sucrose
+4/25/2022,abb,1,spout02,sucrose20,20% sucrose
+4/25/2022,abb,1,spout03,sucrose00,0% sucrose
+4/25/2022,abb,1,spout04,sucrose30,30% sucrose
+4/25/2022,abb,1,spout05,sucrose10,10% sucrose
+4/26/2022,abb,1,spout01,sucrose30,30% sucrose
+4/26/2022,abb,1,spout02,sucrose10,10% sucrose
+4/26/2022,abb,1,spout03,sucrose20,20% sucrose
+4/26/2022,abb,1,spout04,sucrose00,0% sucrose
+4/26/2022,abb,1,spout05,sucrose05,5% sucrose
+4/27/2022,abb,1,spout01,sucrose20,20% sucrose
+4/27/2022,abb,1,spout02,sucrose30,30% sucrose
+4/27/2022,abb,1,spout03,sucrose05,5% sucrose
+4/27/2022,abb,1,spout04,sucrose10,10% sucrose
+4/27/2022,abb,1,spout05,sucrose00,0% sucrose
+4/28/2022,abb,1,spout01,sucrose00,0% sucrose
+4/28/2022,abb,1,spout02,sucrose05,5% sucrose
+4/28/2022,abb,1,spout03,sucrose10,10% sucrose
+4/28/2022,abb,1,spout04,sucrose20,20% sucrose
+4/28/2022,abb,1,spout05,sucrose30,30% sucrose
+5/2/2022,abb,1,spout01,sucrose10,10% sucrose
+5/2/2022,abb,1,spout02,sucrose00,0% sucrose
+5/2/2022,abb,1,spout03,sucrose30,30% sucrose
+5/2/2022,abb,1,spout04,sucrose05,5% sucrose
+5/2/2022,abb,1,spout05,sucrose20,20% sucrose
+5/3/2022,abb,1,spout01,sucrose05,5% sucrose
+5/3/2022,abb,1,spout02,sucrose20,20% sucrose
+5/3/2022,abb,1,spout03,sucrose00,0% sucrose
+5/3/2022,abb,1,spout04,sucrose30,30% sucrose
+5/3/2022,abb,1,spout05,sucrose10,10% sucrose
+5/4/2022,abb,1,spout01,sucrose30,30% sucrose
+5/4/2022,abb,1,spout02,sucrose10,10% sucrose
+5/4/2022,abb,1,spout03,sucrose20,20% sucrose
+5/4/2022,abb,1,spout04,sucrose00,0% sucrose
+5/4/2022,abb,1,spout05,sucrose05,5% sucrose
+5/5/2022,abb,1,spout01,sucrose10,10% sucrose
+5/5/2022,abb,1,spout02,sucrose00,0% sucrose
+5/5/2022,abb,1,spout03,sucrose30,30% sucrose
+5/5/2022,abb,1,spout04,sucrose05,5% sucrose
+5/5/2022,abb,1,spout05,sucrose20,20% sucrose
+5/6/2022,abb,1,spout01,sucrose05,5% sucrose
+5/6/2022,abb,1,spout02,sucrose20,20% sucrose
+5/6/2022,abb,1,spout03,sucrose00,0% sucrose
+5/6/2022,abb,1,spout04,sucrose30,30% sucrose
+5/6/2022,abb,1,spout05,sucrose10,10% sucrose
+5/9/2022,abb,1,spout01,nacl025,.25 M Nacl
+5/9/2022,abb,1,spout02,nacl100,1 M Nacl
+5/9/2022,abb,1,spout03,nacl000,0 M Nacl
+5/9/2022,abb,1,spout04,nacl150,1.5 M Nacl
+5/9/2022,abb,1,spout05,nacl050,.5 M Nacl
+5/10/2022,abb,1,spout01,nacl100,1 M Nacl
+5/10/2022,abb,1,spout02,nacl150,1.5 M Nacl
+5/10/2022,abb,1,spout03,nacl025,.25 M Nacl
+5/10/2022,abb,1,spout04,nacl050,.5 M Nacl
+5/10/2022,abb,1,spout05,nacl000,0 M Nacl
+5/11/2022,abb,1,spout01,nacl050,.5 M Nacl
+5/11/2022,abb,1,spout02,nacl025,.25 M Nacl
+5/11/2022,abb,1,spout03,nacl100,1 M Nacl
+5/11/2022,abb,1,spout04,nacl000,0 M Nacl
+5/11/2022,abb,1,spout05,nacl150,1.5 M Nacl
+5/12/2022,abb,1,spout01,nacl000,0 M Nacl
+5/12/2022,abb,1,spout02,nacl050,.5 M Nacl
+5/12/2022,abb,1,spout03,nacl150,1.5 M Nacl
+5/12/2022,abb,1,spout04,nacl100,1 M Nacl
+5/12/2022,abb,1,spout05,nacl025,.25 M Nacl
+5/13/2022,abb,1,spout01,nacl150,1.5 M Nacl
+5/13/2022,abb,1,spout02,nacl000,0 M Nacl
+5/13/2022,abb,1,spout03,nacl050,.5 M Nacl
+5/13/2022,abb,1,spout04,nacl025,.25 M Nacl
+5/13/2022,abb,1,spout05,nacl100,1 M Nacl
+5/19/2022,abb,2,spout01,sucrose00,0% sucrose
+5/19/2022,abb,2,spout02,sucrose05,5% sucrose
+5/19/2022,abb,2,spout03,sucrose10,10% sucrose
+5/19/2022,abb,2,spout04,sucrose20,20% sucrose
+5/19/2022,abb,2,spout05,sucrose30,30% sucrose
+5/20/2022,abb,2,spout01,sucrose10,10% sucrose
+5/20/2022,abb,2,spout02,sucrose00,0% sucrose
+5/20/2022,abb,2,spout03,sucrose30,30% sucrose
+5/20/2022,abb,2,spout04,sucrose05,5% sucrose
+5/20/2022,abb,2,spout05,sucrose20,20% sucrose
+5/23/2022,abb,2,spout01,sucrose05,5% sucrose
+5/23/2022,abb,2,spout02,sucrose20,20% sucrose
+5/23/2022,abb,2,spout03,sucrose00,0% sucrose
+5/23/2022,abb,2,spout04,sucrose30,30% sucrose
+5/23/2022,abb,2,spout05,sucrose10,10% sucrose
+5/24/2022,abb,2,spout01,sucrose30,30% sucrose
+5/24/2022,abb,2,spout02,sucrose10,10% sucrose
+5/24/2022,abb,2,spout03,sucrose20,20% sucrose
+5/24/2022,abb,2,spout04,sucrose00,0% sucrose
+5/24/2022,abb,2,spout05,sucrose05,5% sucrose
+5/25/2022,abb,2,spout01,sucrose20,20% sucrose
+5/25/2022,abb,2,spout02,sucrose30,30% sucrose
+5/25/2022,abb,2,spout03,sucrose05,5% sucrose
+5/25/2022,abb,2,spout04,sucrose10,10% sucrose
+5/25/2022,abb,2,spout05,sucrose00,0% sucrose
+5/26/2022,abb,2,spout01,sucrose00,0% sucrose
+5/26/2022,abb,2,spout02,sucrose05,5% sucrose
+5/26/2022,abb,2,spout03,sucrose10,10% sucrose
+5/26/2022,abb,2,spout04,sucrose20,20% sucrose
+5/26/2022,abb,2,spout05,sucrose30,30% sucrose
+5/27/2022,abb,2,spout01,sucrose10,10% sucrose
+5/27/2022,abb,2,spout02,sucrose00,0% sucrose
+5/27/2022,abb,2,spout03,sucrose30,30% sucrose
+5/27/2022,abb,2,spout04,sucrose05,5% sucrose
+5/27/2022,abb,2,spout05,sucrose20,20% sucrose
+5/30/2022,abb,2,spout01,sucrose05,5% sucrose
+5/30/2022,abb,2,spout02,sucrose20,20% sucrose
+5/30/2022,abb,2,spout03,sucrose00,0% sucrose
+5/30/2022,abb,2,spout04,sucrose30,30% sucrose
+5/30/2022,abb,2,spout05,sucrose10,10% sucrose
+5/31/2022,abb,2,spout01,sucrose30,30% sucrose
+5/31/2022,abb,2,spout02,sucrose10,10% sucrose
+5/31/2022,abb,2,spout03,sucrose20,20% sucrose
+5/31/2022,abb,2,spout04,sucrose00,0% sucrose
+5/31/2022,abb,2,spout05,sucrose05,5% sucrose
+6/7/2022,abb,2,spout01,sucrose20,20% sucrose
+6/7/2022,abb,2,spout02,sucrose30,30% sucrose
+6/7/2022,abb,2,spout03,sucrose05,5% sucrose
+6/7/2022,abb,2,spout04,sucrose10,10% sucrose
+6/7/2022,abb,2,spout05,sucrose00,0% sucrose
+6/8/2022,abb,2,spout01,sucrose00,0% sucrose
+6/8/2022,abb,2,spout02,sucrose05,5% sucrose
+6/8/2022,abb,2,spout03,sucrose10,10% sucrose
+6/8/2022,abb,2,spout04,sucrose20,20% sucrose
+6/8/2022,abb,2,spout05,sucrose30,30% sucrose
+6/9/2022,abb,2,spout01,sucrose10,10% sucrose
+6/9/2022,abb,2,spout02,sucrose00,0% sucrose
+6/9/2022,abb,2,spout03,sucrose30,30% sucrose
+6/9/2022,abb,2,spout04,sucrose05,5% sucrose
+6/9/2022,abb,2,spout05,sucrose20,20% sucrose
+6/10/2022,abb,2,spout01,sucrose05,5% sucrose
+6/10/2022,abb,2,spout02,sucrose20,20% sucrose
+6/10/2022,abb,2,spout03,sucrose00,0% sucrose
+6/10/2022,abb,2,spout04,sucrose30,30% sucrose
+6/10/2022,abb,2,spout05,sucrose10,10% sucrose
+6/11/2022,abb,2,spout01,sucrose00,0% sucrose
+6/11/2022,abb,2,spout02,sucrose05,5% sucrose
+6/11/2022,abb,2,spout03,sucrose10,10% sucrose
+6/11/2022,abb,2,spout04,sucrose20,20% sucrose
+6/11/2022,abb,2,spout05,sucrose30,30% sucrose
+6/13/2022,abb,2,spout01,nacl025,.25 M Nacl
+6/13/2022,abb,2,spout02,nacl100,1 M Nacl
+6/13/2022,abb,2,spout03,nacl000,0 M Nacl
+6/13/2022,abb,2,spout04,nacl150,1.5 M Nacl
+6/13/2022,abb,2,spout05,nacl050,.5 M Nacl
+6/14/2022,abb,2,spout01,nacl100,1 M Nacl
+6/14/2022,abb,2,spout02,nacl150,1.5 M Nacl
+6/14/2022,abb,2,spout03,nacl025,.25 M Nacl
+6/14/2022,abb,2,spout04,nacl050,.5 M Nacl
+6/14/2022,abb,2,spout05,nacl000,0 M Nacl
+6/15/2022,abb,2,spout01,nacl050,.5 M Nacl
+6/15/2022,abb,2,spout02,nacl025,.25 M Nacl
+6/15/2022,abb,2,spout03,nacl100,1 M Nacl
+6/15/2022,abb,2,spout04,nacl000,0 M Nacl
+6/15/2022,abb,2,spout05,nacl150,1.5 M Nacl
+6/16/2022,abb,2,spout01,nacl000,0 M Nacl
+6/16/2022,abb,2,spout02,nacl050,.5 M Nacl
+6/16/2022,abb,2,spout03,nacl150,1.5 M Nacl
+6/16/2022,abb,2,spout04,nacl100,1 M Nacl
+6/16/2022,abb,2,spout05,nacl025,.25 M Nacl
+6/17/2022,abb,2,spout01,nacl150,1.5 M Nacl
+6/17/2022,abb,2,spout02,nacl000,0 M Nacl
+6/17/2022,abb,2,spout03,nacl050,.5 M Nacl
+6/17/2022,abb,2,spout04,nacl025,.25 M Nacl
+6/17/2022,abb,2,spout05,nacl100,1 M Nacl
+6/18/2022,abb,2,spout01,sucrose00,0% sucrose
+6/18/2022,abb,2,spout02,sucrose05,5% sucrose
+6/18/2022,abb,2,spout03,sucrose10,10% sucrose
+6/18/2022,abb,2,spout04,sucrose20,20% sucrose
+6/18/2022,abb,2,spout05,sucrose30,30% sucrose
