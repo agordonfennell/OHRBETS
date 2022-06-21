@@ -469,7 +469,24 @@ return_viridis_scale <- function(df){
   return(viridis_scale)
 }
 
+return_plt_spout_ids <- function(data_trial_summary){
+  spout_ids <- data_trial_summary %>%
+    select(spout, solution) %>%
+    unique()
 
+  plt_spout_ids <- spout_ids %>%
+    gather('var', 'value', starts_with('lick_count')) %>%
+    ggplot(aes(1, spout, fill = solution)) +
+    geom_tile() +
+    scale_fill_viridis_d(option = viridis_scale, end = 0.9) +
+    ylab('Spout ID') +
+    theme_ag01()
+
+  plt_spout_ids <- plt_spout_ids %>%
+    remove_x_all()
+
+  return(plt_spout_ids)
+}
 
 
 

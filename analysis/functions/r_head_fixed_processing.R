@@ -304,24 +304,39 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
     data_spout_summary   <- data_spout_summary   %>% create_solution_value()
     data_trial_binned    <- data_trial_binned    %>% create_solution_value()
 
+
+    data_session_binned <-  data_trial_summary %>%
+      mutate(trial_split = cut(trial_num, seq(0,100, 10), label = seq(0,90, 10))) %>%
+      group_by(file_name, trial_split, spout, solution) %>%
+      select(file_name, trial_split, spout, solution, lick_count) %>%
+      summarise(lick_count_total  = lick_count %>% sum(),
+                lick_count_mean   = lick_count %>% mean(),
+                lick_count_median = lick_count %>% median(),
+                lick_count_sd     = lick_count %>% sd(),
+                .groups = 'drop') %>%
+      mutate(trial_split = trial_split %>% as.character() %>% as.integer())
+
     print(str_c('  - saving files to dir: ', dir_processed))
 
     print(str_c('    ~ ', fn, '_data_trial.', file_format_output))
     print(str_c('    ~ ', fn, '_trial_summary.', file_format_output))
     print(str_c('    ~ ', fn, '_spout_summary.', file_format_output))
     print(str_c('    ~ ', fn, '_data_trial_binned.', file_format_output))
+    print(str_c('    ~ ', fn, '_data_session_binned.', file_format_output))
 
     if(file_format_output == 'feather'){
       data_trial           %>% write_feather(str_c(dir_processed, fn, '_data_trial.', file_format_output))
       data_trial_summary   %>% write_feather(str_c(dir_processed, fn,  '_trial_summary.', file_format_output))
       data_spout_summary   %>% write_feather(str_c(dir_processed, fn,  '_spout_summary.', file_format_output))
       data_trial_binned    %>% write_feather(str_c(dir_processed, fn, '_data_trial_binned.', file_format_output))
+      data_session_binned  %>% write_feather(str_c(dir_processed, fn, '_data_session_binned.', file_format_output))
     }
     if(file_format_output == 'csv'){
       data_trial           %>% write_csv(str_c(dir_processed, fn, '_data_trial.', file_format_output))
       data_trial_summary   %>% write_csv(str_c(dir_processed, fn,  '_trial_summary.', file_format_output))
       data_spout_summary   %>% write_csv(str_c(dir_processed, fn,  '_spout_summary.', file_format_output))
       data_trial_binned    %>% write_csv(str_c(dir_processed, fn, '_data_trial_binned.', file_format_output))
+      data_session_binned  %>% write_csv(str_c(dir_processed, fn, '_data_session_binned.', file_format_output))
     }
 
   }
