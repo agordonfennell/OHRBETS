@@ -288,7 +288,7 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
     trial_ids          <- generate_trial_ids_multispout(data, param_dynamic, trial_start_id)
 
     # generate trial summaries
-    data_trial         <- generate_trial_events(data, trial_ids, trial_start_id, events_of_interst) # events relative to trial onsets
+    data_trial         <- generate_trial_events(data, trial_ids, trial_start_id, events_of_interest) # events relative to trial onsets
     data_trial_summary <- generate_trial_summary_multispout(data_trial, trial_ids) # trial summary
     data_spout_summary <- generate_session_spout_summary_multispout(data_trial_summary)
     data_trial_binned  <- generate_trial_binned_counts(data_trial, trial_ids, time_bin_width, time_bin_range) # binned lick counts
@@ -531,7 +531,7 @@ create_solution_value <- function(df){
 
 # Trial functions -----------------------------------------------------------------------------------------------------
 # these functions might belong in a more general R function repository
-generate_trial_events <- function(data, trial_ids, trial_start_id, events_of_interst){
+generate_trial_events <- function(data, trial_ids, trial_start_id, events_of_interest){
   # uses data and trial_ids to determine the trial info for each event defined by events_of_interest
   # * trial_start_id defines the event_id_char value that denotes the start of a trial, must match the one
   #   used to generate the trial_ids

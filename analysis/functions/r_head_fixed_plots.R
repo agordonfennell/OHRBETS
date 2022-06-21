@@ -449,7 +449,7 @@ return(plt_combined)
 
 
 return_viridis_scale <- function(df){
-  df <- data_trial %>%
+  session_solutions <- df %>%
     pull(solution) %>%
     unique()
 
