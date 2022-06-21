@@ -16,8 +16,8 @@ file_date <- function(x){
     mutate(temp_file_name = file_name) %>%
     separate(temp_file_name, into = c('date_year', 'date_month', 'date_day', 'subject'), sep = "_") %>%
     mutate(date = str_c(date_year, date_month, date_day, sep = "_")) %>%
-    select(-date_year, -date_month, -date_day) %>%
-    select(file_name, subject, date, everything())
+    select(-date_year, -date_month, -date_day, -subject) %>%
+    select(file_name, date, everything())
   
   return(x)
 }
@@ -228,7 +228,7 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
 # processing -----------------------------------------------------------------------------------------------------------
 
 
-process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_multi_spout_ids, file_format_output, manual_fns = NA, overwrite = 0, time_bin_width = 25, time_bin_range = c(0,3000)){
+process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_multi_spout_ids, file_format_output, manual_fns = NA, overwrite = 0, time_bin_width = 25, time_bin_range = c(0,3000), session_trial_width = 10, session_trial_range = c(0,100)){
   # process each individual file in dir_extracted and save in dir_processed
   #
   # inputs:
@@ -304,38 +304,32 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
     data_spout_summary   <- data_spout_summary   %>% create_solution_value()
     data_trial_binned    <- data_trial_binned    %>% create_solution_value()
 
-
-    data_session_binned <-  data_trial_summary %>%
-      mutate(trial_split = cut(trial_num, seq(0,100, 10), label = seq(0,90, 10))) %>%
-      group_by(file_name, trial_split, spout, solution) %>%
-      select(file_name, trial_split, spout, solution, lick_count) %>%
-      summarise(lick_count_total  = lick_count %>% sum(),
-                lick_count_mean   = lick_count %>% mean(),
-                lick_count_median = lick_count %>% median(),
-                lick_count_sd     = lick_count %>% sd(),
-                .groups = 'drop') %>%
-      mutate(trial_split = trial_split %>% as.character() %>% as.integer())
+    # calculate counts in bins of trials
+    data_session_binned_spout <-  data_trial_summary %>% generate_session_binned_count_spout(session_trial_width, session_trial_range)
+    data_session_binned <- data_trial_summary %>% generate_session_binned_count(session_trial_width, session_trial_range)
 
     print(str_c('  - saving files to dir: ', dir_processed))
 
     print(str_c('    ~ ', fn, '_data_trial.', file_format_output))
-    print(str_c('    ~ ', fn, '_trial_summary.', file_format_output))
-    print(str_c('    ~ ', fn, '_spout_summary.', file_format_output))
+    print(str_c('    ~ ', fn, '_data_trial_summary.', file_format_output))
+    print(str_c('    ~ ', fn, '_data_spout_summary.', file_format_output))
     print(str_c('    ~ ', fn, '_data_trial_binned.', file_format_output))
-    print(str_c('    ~ ', fn, '_data_session_binned.', file_format_output))
+    print(str_c('    ~ ', fn, '_data_session_binned_spout.', file_format_output))
 
     if(file_format_output == 'feather'){
       data_trial           %>% write_feather(str_c(dir_processed, fn, '_data_trial.', file_format_output))
-      data_trial_summary   %>% write_feather(str_c(dir_processed, fn,  '_trial_summary.', file_format_output))
-      data_spout_summary   %>% write_feather(str_c(dir_processed, fn,  '_spout_summary.', file_format_output))
+      data_trial_summary   %>% write_feather(str_c(dir_processed, fn,  '_data_trial_summary.', file_format_output))
+      data_spout_summary   %>% write_feather(str_c(dir_processed, fn,  '_data_spout_summary.', file_format_output))
       data_trial_binned    %>% write_feather(str_c(dir_processed, fn, '_data_trial_binned.', file_format_output))
+      data_session_binned_spout  %>% write_feather(str_c(dir_processed, fn, '_data_session_binned_spout.', file_format_output))
       data_session_binned  %>% write_feather(str_c(dir_processed, fn, '_data_session_binned.', file_format_output))
     }
     if(file_format_output == 'csv'){
       data_trial           %>% write_csv(str_c(dir_processed, fn, '_data_trial.', file_format_output))
-      data_trial_summary   %>% write_csv(str_c(dir_processed, fn,  '_trial_summary.', file_format_output))
-      data_spout_summary   %>% write_csv(str_c(dir_processed, fn,  '_spout_summary.', file_format_output))
+      data_trial_summary   %>% write_csv(str_c(dir_processed, fn,  '_data_trial_summary.', file_format_output))
+      data_spout_summary   %>% write_csv(str_c(dir_processed, fn,  '_data_spout_summary.', file_format_output))
       data_trial_binned    %>% write_csv(str_c(dir_processed, fn, '_data_trial_binned.', file_format_output))
+      data_session_binned_spout  %>% write_csv(str_c(dir_processed, fn, '_data_session_binned_spout.', file_format_output))
       data_session_binned  %>% write_csv(str_c(dir_processed, fn, '_data_session_binned.', file_format_output))
     }
 
@@ -505,7 +499,7 @@ join_multi_spout_solution_id <- function(df, log_data, log_multi_spout_ids){
   df %>%
     left_join(log_data %>% select(file_name = beh_fn, experiment, cohort, date),
               by = "file_name") %>%
-    left_join(log_multi_spout_ids,
+    left_join(log_multi_spout_ids %>% select(experiment, cohort, date, spout, solution),
               by = c("experiment", "cohort", "date", "spout"))
 
 }
@@ -624,7 +618,37 @@ generate_trial_binned_counts <- function(data_trial, trial_ids, time_bin_width, 
       data_trial_binned <- data_trial_binned_loop %>% bind_rows(data_trial_binned,.)
     }
   }
+
+  data_trial_binned <- data_trial_binned %>%
+    mutate(time_bin_width = time_bin_width)
+
   return(data_trial_binned)
+}
+
+generate_session_binned_count_spout <- function(data_trial_summary, session_trial_width, session_trial_range){
+  data_trial_summary %>%
+      mutate(trial_split = cut(trial_num, seq(session_trial_range[1], session_trial_range[2], session_trial_width), label = seq(session_trial_range[1], session_trial_range[2] - session_trial_width, session_trial_width))) %>%
+      group_by(file_name, trial_split, spout, solution) %>%
+      select(file_name, trial_split, spout, solution, lick_count) %>%
+      summarise(lick_count_total  = lick_count %>% sum(),
+                lick_count_mean   = lick_count %>% mean(),
+                lick_count_median = lick_count %>% median(),
+                lick_count_sd     = lick_count %>% sd(),
+                .groups = 'drop') %>%
+      mutate(trial_split = trial_split %>% as.character() %>% as.integer())
+}
+
+generate_session_binned_count <- function(data_trial_summary, session_trial_width, session_trial_range){
+  data_trial_summary %>%
+      mutate(trial_split = cut(trial_num, seq(session_trial_range[1], session_trial_range[2], session_trial_width), label = seq(session_trial_range[1], session_trial_range[2] - session_trial_width, session_trial_width))) %>%
+      group_by(file_name, trial_split) %>%
+      select(file_name, trial_split, spout, solution, lick_count) %>%
+      summarise(lick_count_total  = lick_count %>% sum(),
+                lick_count_mean   = lick_count %>% mean(),
+                lick_count_median = lick_count %>% median(),
+                lick_count_sd     = lick_count %>% sd(),
+                .groups = 'drop') %>%
+      mutate(trial_split = trial_split %>% as.character() %>% as.integer())
 }
 
 
