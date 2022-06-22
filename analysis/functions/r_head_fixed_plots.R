@@ -898,8 +898,8 @@ if(plotting_multi_sbj == 1){
   }
 
   if(plotting_multi_sbj == 1){
-    combined_plt <-  + plt_ili + plt03 + plt04 + plt05 + plt06 + plt07 + plt08 + plt09 +
-       plot_layout(widths = unit(c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), c('cm','cm','cm')),
+    combined_plt <-  plt_ili + plt03 + plt04 + plt05 + plt06 + plt07 + plt08 + plt09 +
+       plot_layout(widths = unit(c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), c('cm','cm','cm')),
                    heights = unit(c(5), c('cm')),
                    guides = 'collect') +
       plot_annotation(title = analysis_id)
