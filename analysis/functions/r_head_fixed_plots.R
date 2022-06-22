@@ -422,7 +422,7 @@ return_plt_spout_ids <- function(data_trial_summary, var_session, plotting_multi
   return(plt_spout_ids)
 }
 
-combined_plt_multi_spout_summary <- function(dir_extracted, analysis_fns, log_data, analysis_id, dir_output, file_format){
+combined_plt_multi_spout_summary <- function(dir_extracted, dir_processed, analysis_fns, log_data, analysis_id, dir_output, file_format){
 
   first_loop <- 1
 
@@ -616,6 +616,7 @@ plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_s
   # return color scale based on solutions
   viridis_scale <- return_viridis_scale(data_trial)
 
+
   # return xlims for trial time series plots
   xlim_max <- session_parameters %>%
     pull(access_time) %>%
@@ -675,10 +676,11 @@ plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_s
                  var_color = 'solution',
                  plt_scale_color = viridis_scale) +
        theme(strip.text.y = element_blank())
+
+    # return plot for spout ids
+    plt_spout_ids <- return_plt_spout_ids(data_trial_summary, var_session = 'day', plotting_multi_sbj, viridis_scale)
   }
 
-  # return plot for spout ids
-  plt_spout_ids <- return_plt_spout_ids(data_trial_summary, var_session = 'day', plotting_multi_sbj, viridis_scale)
 
   # return plot for binned lick rate
   if(plotting_multi_sbj == 0){
@@ -848,7 +850,6 @@ if(plotting_multi_sbj == 1){
 
   # adjust plot aesthetics
   plt_ili <- plt_ili + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
-  plt_spout_ids <- plt_spout_ids + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
   plt03 <- plt03 + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
   plt04 <- plt04 + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
   plt05 <- plt05 + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
@@ -860,6 +861,7 @@ if(plotting_multi_sbj == 1){
   if(plotting_multi_sbj == 0){
     plt_lickraster <- plt_lickraster + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
     plt_lickraster_sorted <- plt_lickraster_sorted + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
+    plt_spout_ids <- plt_spout_ids + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
 
     combined_plt <- plt_spout_ids + plt_lickraster + plt_lickraster_sorted + plt_ili + plt03 + plt04 + plt05 + plt06 + plt07 + plt08 + plt09 +
        plot_layout(widths = unit(c(1, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), c('cm','cm','cm')),
@@ -896,7 +898,7 @@ if(plotting_multi_sbj == 1){
   }
 
   if(plotting_multi_sbj == 1){
-    combined_plt <- plt_spout_ids + plt_ili + plt03 + plt04 + plt05 + plt06 + plt07 + plt08 + plt09 +
+    combined_plt <-  + plt_ili + plt03 + plt04 + plt05 + plt06 + plt07 + plt08 + plt09 +
        plot_layout(widths = unit(c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), c('cm','cm','cm')),
                    heights = unit(c(5), c('cm')),
                    guides = 'collect') +

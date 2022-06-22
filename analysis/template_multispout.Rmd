@@ -76,7 +76,7 @@ extract_serial_output(
   manual_experiments = c('abb'), # optional- experiment string to process a single experiment
   manual_blocknames = NA,        # optional- use a vector of strings to specify individual sessions to process 
   file_format_output,            # file format (csv or feather)
-  overwrite = 1                  # 0: only process new files in dir_raw, 1: process all files found in dir_raw and overwrite data in dir_extraction
+  overwrite = 0                  # 0: only process new files in dir_raw, 1: process all files found in dir_raw and overwrite data in dir_extraction
   )
 ```
 
@@ -98,7 +98,7 @@ process_multi_spout(
   log_multi_spout_ids,           # log of multi-spout pairings 
   file_format_output = 'csv',    # file format (csv or feather)
   manual_fns,                    # optional- use a vector of strings to specify individual sessions to proces (otherwise use independent folders)
-  overwrite = 1,                 # 0: only process new files in dir_extraction, 1: process all files found in dir_extraction and overwrite data in dir_processed
+  overwrite = 0,                 # 0: only process new files in dir_extraction, 1: process all files found in dir_extraction and overwrite data in dir_processed
   time_bin_width = 100,          # bin width (ms) for binned average of licking during access
   time_bin_range = c(0,3000),    # time range (ms) for the access period
   session_trial_width = 10,      # bin width (trials) for licking across trials (e.g. 10 for blocks of 10 trials / bin)
@@ -109,14 +109,14 @@ process_multi_spout(
 # data visualization
 ## summaries of individual sessions
 ```{r, messages = FALSE}
-# optional
-# batch_session_plt_multi_spout_summary(
-#   dir_processed,                  # directory for data produced by process_multi_spout
-#   dir_extraction,                 # directory for data produced by extract_serial_output
-#   file_format = 'csv',            # file format (csv or feather)
-#   manual_blocknames = manual_fns, # optional- use a vector of strings to specify individual sessions to proces
-#   overwrite = 0                   # 0: only plot new data, 1: plot all data and overwrite
-#   )
+optional
+batch_session_plt_multi_spout_summary(
+  dir_processed,                  # directory for data produced by process_multi_spout
+  dir_extraction,                 # directory for data produced by extract_serial_output
+  file_format = 'csv',            # file format (csv or feather)
+  manual_blocknames = manual_fns, # optional- use a vector of strings to specify individual sessions to proces
+  overwrite = 0                   # 0: only plot new data, 1: plot all data and overwrite
+  )
 ```
 
 ## groupped summaries
@@ -125,21 +125,19 @@ source_functions()
 
 # setup the sessions to be included
 analysis_fns <- log_data %>%
-  filter(procedure == 'multi_s') %>%
+  filter(procedure == 'multi_s') %>% 
   filter(deprivation == 'wr') %>%
   pull(blockname)
 
 # return summary plot for files specified in analysis_fns
 plt_wr <- combined_plt_multi_spout_summary(
   dir_extracted = dir_extraction,
+  dir_processed = dir_processed,
   analysis_fns = analysis_fns,
   log_data = log_data,
   analysis_id = 'multi_s', 
   dir_output = dir_analysis,
   file_format = 'csv')
-
-plt_wr 
-
 
 analysis_fns <- log_data %>%
   filter(procedure == 'multi_s') %>%
@@ -148,6 +146,7 @@ analysis_fns <- log_data %>%
 
 plt_fr <- combined_plt_multi_spout_summary(
   dir_extracted = dir_extraction,
+  dir_processed = dir_processed,
   analysis_fns = analysis_fns,
   log_data = log_data,
   analysis_id = 'multi_s', 
@@ -160,6 +159,7 @@ analysis_fns <- log_data %>%
 
 plt_nacl <- combined_plt_multi_spout_summary(
   dir_extracted = dir_extraction,
+  dir_processed = dir_processed,
   analysis_fns = analysis_fns,
   log_data = log_data,
   analysis_id = 'multi_nacl', 
@@ -168,7 +168,33 @@ plt_nacl <- combined_plt_multi_spout_summary(
 
 
 plt_wr / plt_fr / plt_nacl
-
 ```
 
+```{r}
+
+# summary plot for number of sessions per subject, and number of trials / session
+
+log_data %>%
+  filter(procedure == 'multi_s') %>% 
+  filter(deprivation == 'wr') %>%
+  filter(subject == 'abb03')
+
+tibble(
+  #fn = list.files(dir_processed)
+  fn = manual_fns
+) %>%
+  mutate(sbj = substr(fn, 12,16)) %>%
+  group_by(sbj) %>%
+  summarise(count = n())
+
+plt_wr[[2]] %>%
+  select(subject, blockname) %>%
+  unique() %>%
+  group_by(subject) %>%
+  summarise(session_count = n())
+  
+
+manual_fns
+
+```
 

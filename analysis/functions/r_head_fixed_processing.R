@@ -466,7 +466,7 @@ generate_trial_summary_multispout <- function(data_trial, trial_ids){
   # uses data_trial and  trial_ids to compute summary statitics for each trial
   #
   # returns tibble with
-  #   blockname: file name string (key value)
+  #   blockname:      session id string (key value)
   #   trial_start_ts: start time for each trial (obtained from trials_ids)
   #   trial_num:      number of trial (obtained from trials_ids)
   #   trial_id:       id of trial (obtained from trials_ids)
