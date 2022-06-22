@@ -188,6 +188,13 @@ plt_manual_scale_cartesian <- function(plt, plt_manual_scale_x, plt_manual_scale
   return(plt)
 }
 
+join_log_data <- function(df, log_data, vars_to_join, vars_by){
+    log_data <- log_data %>%
+      select(all_of(c(vars_to_join, vars_by)))
+
+    df %>%
+      left_join(log_data, by = vars_by)
+}
 
 # universal plots ----------------------------------------------------------------------------------------------------
 plt_raster <- function(df, x, y, id, facet_x, facet_y, xlab, ylab, plt_y_lims, plt_x_lims, plt_dims, var_color, plt_scale_color){
@@ -422,11 +429,45 @@ return_plt_spout_ids <- function(data_trial_summary, var_session, plotting_multi
   return(plt_spout_ids)
 }
 
-combined_plt_multi_spout_summary <- function(dir_extracted, dir_processed, analysis_fns, log_data, analysis_id, dir_output, file_format){
+return_plt_session_counts_per_sbj <- function(df){
+  session_counts <- df %>%
+    select(subject, blockname) %>%
+    unique() %>%
+    group_by(subject) %>%
+    summarise(session_count = n())
 
+  plt_session_counts <- session_counts %>%
+    ggplot(aes(subject, session_count)) +
+    geom_point(size = 2)  +
+    theme_ag01() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.3)) +
+    xlab('Subject') +
+    ylab('Session Count')
+
+  return(plt_session_counts)
+
+}
+
+
+combined_plt_multi_spout_summary <- function(dir_extracted, dir_processed, analysis_fns, log_data, analysis_id, dir_output, file_format){
+  # create a multi spout summary plot from data across multiple sessions / subjects
+  #
+  # dir_extracted (string): directory of the extracted data produced by extract_serial_output()
+  # dir_processed (string): directory of the processed data produced by process_multi_spout()
+  # analysis_fns (vector of strings): vector of blockname strings that will be included in the plots / analysis
+  # log_data (dataframe): log of data included in plots /analysis
+  # analysis_id (string): unique name for the prefix of output
+  # dir_output (string): directory for plots and data to be saved to
+  # file_format(string): file format of input data (csv or feather)
+  #
+  # produces multiple combined datasets that can be used for comparision analysis
+
+
+  # read and combine files for each session defined in analysis_fns
   first_loop <- 1
 
   for(blockname in analysis_fns){
+    # read in dataframes
     if(str_detect(file_format, 'feather')){
       session_parameters_loop <- read_feather(str_c(dir_extracted, blockname, '_param.', file_format))
       data_trial_loop <- read_feather(str_c(dir_processed, blockname, '_data_trial.', file_format))
@@ -444,6 +485,7 @@ combined_plt_multi_spout_summary <- function(dir_extracted, dir_processed, analy
       return(0)
     }
 
+    # combine dataframes
     if(first_loop){
       session_parameters <- session_parameters_loop
       data_trial <- data_trial_loop
@@ -460,17 +502,9 @@ combined_plt_multi_spout_summary <- function(dir_extracted, dir_processed, analy
     }
   }
 
-  # join info
-  join_log_data <- function(df, log_data, vars_to_join, vars_by){
-    log_data <- log_data %>%
-      select(all_of(c(vars_to_join, vars_by)))
-
-    df %>%
-      left_join(log_data, by = vars_by)
-  }
-
-  vars_to_join <- c('subject', 'procedure', 'day')
-  vars_by <- c('blockname')
+  # join info from log_data
+  vars_to_join <- c('subject', 'procedure', 'day') # variables from log_data you wish to join
+  vars_by <- c('blockname')                        # key variables used to join data
 
   session_parameters <- session_parameters %>% join_log_data(log_data, vars_to_join, vars_by)
   data_trial <- data_trial %>% join_log_data(log_data, vars_to_join, vars_by)
@@ -478,17 +512,18 @@ combined_plt_multi_spout_summary <- function(dir_extracted, dir_processed, analy
   data_trial_binned <- data_trial_binned %>% join_log_data(log_data, vars_to_join, vars_by)
   data_session_binned_spout <- data_session_binned_spout %>% join_log_data(log_data, vars_to_join, vars_by)
 
-
-  data_lick_proportion <- data_trial_summary %>%
+  # create summary dataframes
+  data_lick_proportion <- data_trial_summary %>% # proportion of trials with a lick
       group_by(solution, subject, blockname) %>%
       summarise(lick_proportion = sum(trial_lick) / max(trial_num_tastant)) %>%
       group_by(solution, subject) %>% summarise(lick_proportion = mean(lick_proportion))
 
-  data_session_summary <- data_trial_summary %>%
+  data_session_summary <- data_trial_summary %>% # session summary for lick counts for each solution
     group_by(subject, solution) %>%
     summarise(lick_count_mean = lick_count %>% mean(),
               lick_count_total = lick_count %>% sum())
 
+  # generate combined plot (also saves pdf and png)
   plt_combined <- plt_multi_spout_summary(
     session_parameters,
     data_trial,
@@ -503,28 +538,40 @@ combined_plt_multi_spout_summary <- function(dir_extracted, dir_processed, analy
     blockname = NA
     )
 
-    print('saving data')
-    session_parameters %>% write_csv(str_c(dir_output, analysis_id, '_session_parameters.csv'))
-    data_trial_summary %>% write_csv(str_c(dir_output, analysis_id, '_data_trial_summary.csv'))
-    data_trial_binned %>% write_csv(str_c(dir_output, analysis_id, '_data_trial_binned.csv'))
-    data_session_binned_spout %>% write_csv(str_c(dir_output, analysis_id, '_data_session_binned_spout.csv'))
-    data_lick_proportion %>% write_csv(str_c(dir_output, analysis_id, '_data_lick_proportion.csv'))
-    data_session_summary %>% write_csv(str_c(dir_output, analysis_id, '_data_session_summary.csv'))
+  # save combined datasets
+  print('saving data...')
+  session_parameters %>% write_csv(str_c(dir_output, analysis_id, '_session_parameters.csv'))
+  data_trial_summary %>% write_csv(str_c(dir_output, analysis_id, '_data_trial_summary.csv'))
+  data_trial_binned %>% write_csv(str_c(dir_output, analysis_id, '_data_trial_binned.csv'))
+  data_session_binned_spout %>% write_csv(str_c(dir_output, analysis_id, '_data_session_binned_spout.csv'))
+  data_lick_proportion %>% write_csv(str_c(dir_output, analysis_id, '_data_lick_proportion.csv'))
+  data_session_summary %>% write_csv(str_c(dir_output, analysis_id, '_data_session_summary.csv'))
 
-    print('saving stats')
-    stats_results <- data_session_summary %>%
-      aov_rm_one_within(., dir_output, str_c(analysis_id, '_stats_triallickcount'), 'subject', 'lick_count_mean', 'solution')
+  # generate and save statistics for solution preference
+  print('saving stats...')
+  stats_results <- data_session_summary %>%
+    aov_rm_one_within(., dir_output, str_c(analysis_id, '_stats_triallickcount'), 'subject', 'lick_count_mean', 'solution')
 
-    stats_results <- data_lick_proportion %>%
-      aov_rm_one_within(., dir_output, str_c(analysis_id, '_stats_triallickproportion'), 'subject', 'lick_proportion', 'solution')
+  stats_results <- data_lick_proportion %>%
+    aov_rm_one_within(., dir_output, str_c(analysis_id, '_stats_triallickproportion'), 'subject', 'lick_proportion', 'solution')
 
-    return(plt_combined)
+  # return combined plot
+  return(plt_combined)
 }
 
 batch_session_plt_multi_spout_summary <- function(dir_processed, dir_extracted, file_format = 'csv', manual_blocknames = NA, overwrite = 0){
+  # automatically generate a combined plot for each specified multi-spout dataset
+  #
+  # dir_extracted (string): directory of the extracted data produced by extract_serial_output()
+  # dir_processed (string): directory of the processed data produced by process_multi_spout()
+  # file_format(string): file format of input data (csv or feather)
+  # manual_blocknames (vector of strings): vector of blocknames for generating plots of a subset, set of NA to create plots for all data in dir_extracted
+  # overwrite (boolean): 1: create all summary figures and overwrite data in dir_extracted, 0: only generate summary figures for datasets without a summary figure
 
+  # create a list of files in dir_processed
   fns_dir_processed <- list.files(dir_processed)
 
+  # remove defined suffixes to return blocknames
   data_suffixes <- c(
     '_data_session_binned.',
     '_data_session_binned_spout.',
@@ -577,8 +624,8 @@ batch_session_plt_multi_spout_summary <- function(dir_processed, dir_extracted, 
 
   }
 
+  # for each blockname, read in data and generate combined plot
   for(blockname in blocknames){
-
    if(str_detect(file_format, 'feather')){
      session_parameters <- read_feather(str_c(dir_extracted, blockname, '_param.', file_format))
      data_trial <- read_feather(str_c(dir_processed, blockname, '_data_trial.', file_format))
@@ -595,6 +642,7 @@ batch_session_plt_multi_spout_summary <- function(dir_processed, dir_extracted, 
      print('Error: incompatable file type (requires .feather or .csv)')
    }
 
+    # generate combined plot (also saves pdf and png)
     plt_multi_spout_summary(
       session_parameters,
       data_trial,
@@ -613,6 +661,14 @@ batch_session_plt_multi_spout_summary <- function(dir_processed, dir_extracted, 
 
 plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_summary, data_trial_binned, data_session_binned_spout, data_lick_proportion,
     data_session_summary, plotting_multi_sbj, analysis_id, dir_output, blockname){
+  # generates a single summary figure for multi-spout datasets (both single subject and combined subjects)
+  #
+  # session_parameters:data_session_summary data produced by extract_serial_output or process_multi_spout
+  # plotting_multi_sbj (boolean): 1: datasets contain multiple subjects / sessions, 2: dataset consists of a single subject
+  # analysis_id (string): id for output with multiple subject / session
+  # dir_output (string): directory for summary figure to be saved
+  # blockname (string): id for output with single subject
+
   # return color scale based on solutions
   viridis_scale <- return_viridis_scale(data_trial)
 
@@ -681,6 +737,9 @@ plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_s
     plt_spout_ids <- return_plt_spout_ids(data_trial_summary, var_session = 'day', plotting_multi_sbj, viridis_scale)
   }
 
+  if(plotting_multi_sbj == 1){
+    plt_session_coutns <- return_plt_session_counts_per_sbj(data_trial_summary)
+  }
 
   # return plot for binned lick rate
   if(plotting_multi_sbj == 0){
@@ -715,56 +774,56 @@ plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_s
       )
   }
 
-plt04 <- data_trial_summary  %>%
-  filter(lick_count > 0) %>%
-  ggplot(aes(lick_count, color = solution)) +
-  stat_ecdf() +
-  scale_color_viridis_d(option = viridis_scale, end = 0.9) +
-  theme_ag01() +
-  coord_cartesian(ylim = c(0,1), xlim = c(0, max(data_trial_summary$lick_count)), expand = FALSE) +
-  scale_y_continuous(breaks = c(0,1)) +
-  scale_x_continuous(breaks = c(0,max(data_trial_summary$lick_count))) +
-  ggtitle('Lick Count > 0 \n') +
-  ylab('Proportion') +
-  theme(axis.title.x = element_blank())
-
-plt05 <- data_trial_summary  %>%
-  filter(lick_count > 0) %>%
-  ggplot(aes(lick_ts_last, color = solution)) +
-  stat_ecdf() +
-  scale_color_viridis_d(option = viridis_scale, end = 0.9) +
-  theme_ag01() +
-  coord_cartesian(ylim = c(0,1), xlim = c(0, xlim_max), expand = FALSE) +
-  scale_y_continuous(breaks = c(0,1)) +
-  scale_x_continuous(breaks = c(0,xlim_max)) +
-  ggtitle('Last Lick (ms) \n') +
-  theme(axis.title.x = element_blank())
-
-plt05 <- remove_y_all(plt05)
-
-if(plotting_multi_sbj == 0){
-  plt06 <- data_trial_summary %>%
-    ggplot(aes(solution, lick_count, color = solution)) +
-    geom_beeswarm(cex = 3, alpha = 1/3, stroke = 0.2, shape = 21, size = 3, fill = NA) +
-    stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = 1), size = 0.5, width = 0) +
-    stat_summary(fun = 'mean',         geom = 'hpline', aes(group = 1), size = 0.5, width = 0.8) +
-    theme_ag01() +
+  plt04 <- data_trial_summary  %>%
+    filter(lick_count > 0) %>%
+    ggplot(aes(lick_count, color = solution)) +
+    stat_ecdf() +
     scale_color_viridis_d(option = viridis_scale, end = 0.9) +
-    xlab('Solution') +
-    ylab('Trial Lick Count')
-}
-
-if(plotting_multi_sbj == 1){
-  plt06 <- data_session_summary %>%
-    ggplot(aes(solution, lick_count_mean, color = solution)) +
-    geom_beeswarm(cex = 3, alpha = 1/3, stroke = 0.2, shape = 21, size = 3, fill = NA) +
-    stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = 1), size = 0.5, width = 0) +
-    stat_summary(fun = 'mean',         geom = 'hpline', aes(group = 1), size = 0.5, width = 0.8) +
     theme_ag01() +
+    coord_cartesian(ylim = c(0,1), xlim = c(0, max(data_trial_summary$lick_count)), expand = FALSE) +
+    scale_y_continuous(breaks = c(0,1)) +
+    scale_x_continuous(breaks = c(0,max(data_trial_summary$lick_count))) +
+    ggtitle('Lick Count > 0 \n') +
+    ylab('Proportion') +
+    theme(axis.title.x = element_blank())
+
+  plt05 <- data_trial_summary  %>%
+    filter(lick_count > 0) %>%
+    ggplot(aes(lick_ts_last, color = solution)) +
+    stat_ecdf() +
     scale_color_viridis_d(option = viridis_scale, end = 0.9) +
-    xlab('Solution') +
-    ylab('Trial Lick Count')
-}
+    theme_ag01() +
+    coord_cartesian(ylim = c(0,1), xlim = c(0, xlim_max), expand = FALSE) +
+    scale_y_continuous(breaks = c(0,1)) +
+    scale_x_continuous(breaks = c(0,xlim_max)) +
+    ggtitle('Last Lick (ms) \n') +
+    theme(axis.title.x = element_blank())
+
+  plt05 <- remove_y_all(plt05)
+
+  if(plotting_multi_sbj == 0){
+    plt06 <- data_trial_summary %>%
+      ggplot(aes(solution, lick_count, color = solution)) +
+      geom_beeswarm(cex = 3, alpha = 1/3, stroke = 0.2, shape = 21, size = 3, fill = NA) +
+      stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = 1), size = 0.5, width = 0) +
+      stat_summary(fun = 'mean',         geom = 'hpline', aes(group = 1), size = 0.5, width = 0.8) +
+      theme_ag01() +
+      scale_color_viridis_d(option = viridis_scale, end = 0.9) +
+      xlab('Solution') +
+      ylab('Trial Lick Count')
+  }
+
+  if(plotting_multi_sbj == 1){
+    plt06 <- data_session_summary %>%
+      ggplot(aes(solution, lick_count_mean, color = solution)) +
+      geom_beeswarm(cex = 3, alpha = 1/3, stroke = 0.2, shape = 21, size = 3, fill = NA) +
+      stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = 1), size = 0.5, width = 0) +
+      stat_summary(fun = 'mean',         geom = 'hpline', aes(group = 1), size = 0.5, width = 0.8) +
+      theme_ag01() +
+      scale_color_viridis_d(option = viridis_scale, end = 0.9) +
+      xlab('Solution') +
+      ylab('Trial Lick Count')
+  }
 
   plt06 <- plt06 %>% remove_x_all()
 
@@ -796,7 +855,6 @@ if(plotting_multi_sbj == 1){
   }
 
   plt07 <- plt07 %>% remove_x_all()
-
 
   if(plotting_multi_sbj == 0){
     plt08 <- data_session_binned_spout %>%
@@ -858,13 +916,14 @@ if(plotting_multi_sbj == 1){
   plt08 <- plt08 + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
   plt09 <- plt09 + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
 
+  # combine, save, and return plots
   if(plotting_multi_sbj == 0){
     plt_lickraster <- plt_lickraster + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
     plt_lickraster_sorted <- plt_lickraster_sorted + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
     plt_spout_ids <- plt_spout_ids + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + theme(legend.position = "none")
 
     combined_plt <- plt_spout_ids + plt_lickraster + plt_lickraster_sorted + plt_ili + plt03 + plt04 + plt05 + plt06 + plt07 + plt08 + plt09 +
-       plot_layout(widths = unit(c(1, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), c('cm','cm','cm')),
+       plot_layout(widths = unit(c(1, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), c('cm')),
                    heights = unit(c(5), c('cm')),
                    guides = 'collect') +
       plot_annotation(title = blockname)
@@ -898,8 +957,10 @@ if(plotting_multi_sbj == 1){
   }
 
   if(plotting_multi_sbj == 1){
-    combined_plt <-  plt_ili + plt03 + plt04 + plt05 + plt06 + plt07 + plt08 + plt09 +
-       plot_layout(widths = unit(c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), c('cm','cm','cm')),
+    plt_session_coutns <- plt_session_coutns + theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+
+    combined_plt <-  plt_session_coutns + plt_ili + plt03 + plt04 + plt05 + plt06 + plt07 + plt08 + plt09 +
+       plot_layout(widths = unit(c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), c('cm')),
                    heights = unit(c(5), c('cm')),
                    guides = 'collect') +
       plot_annotation(title = analysis_id)

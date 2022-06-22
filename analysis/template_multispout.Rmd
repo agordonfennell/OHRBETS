@@ -109,24 +109,23 @@ process_multi_spout(
 # data visualization
 ## summaries of individual sessions
 ```{r, messages = FALSE}
-optional
-batch_session_plt_multi_spout_summary(
-  dir_processed,                  # directory for data produced by process_multi_spout
-  dir_extraction,                 # directory for data produced by extract_serial_output
-  file_format = 'csv',            # file format (csv or feather)
-  manual_blocknames = manual_fns, # optional- use a vector of strings to specify individual sessions to proces
-  overwrite = 0                   # 0: only plot new data, 1: plot all data and overwrite
-  )
+#optional
+# batch_session_plt_multi_spout_summary(
+#   dir_processed,                  # directory for data produced by process_multi_spout
+#   dir_extraction,                 # directory for data produced by extract_serial_output
+#   file_format = 'csv',            # file format (csv or feather)
+#   manual_blocknames = manual_fns, # optional- use a vector of strings to specify individual sessions to proces
+#   overwrite = 0                   # 0: only plot new data, 1: plot all data and overwrite
+#   )
 ```
 
 ## groupped summaries
 ```{r, message = FALSE, fig.height = 9, fig.width=12}
-source_functions()
-
 # setup the sessions to be included
 analysis_fns <- log_data %>%
   filter(procedure == 'multi_s') %>% 
   filter(deprivation == 'wr') %>%
+  filter(exclude == 0) %>%
   pull(blockname)
 
 # return summary plot for files specified in analysis_fns
@@ -135,13 +134,14 @@ plt_wr <- combined_plt_multi_spout_summary(
   dir_processed = dir_processed,
   analysis_fns = analysis_fns,
   log_data = log_data,
-  analysis_id = 'multi_s', 
+  analysis_id = 'multi_s_wr', 
   dir_output = dir_analysis,
   file_format = 'csv')
 
 analysis_fns <- log_data %>%
   filter(procedure == 'multi_s') %>%
   filter(deprivation == 'fr') %>%
+  filter(exclude == 0) %>%
   pull(blockname)
 
 plt_fr <- combined_plt_multi_spout_summary(
@@ -149,12 +149,13 @@ plt_fr <- combined_plt_multi_spout_summary(
   dir_processed = dir_processed,
   analysis_fns = analysis_fns,
   log_data = log_data,
-  analysis_id = 'multi_s', 
+  analysis_id = 'multi_s_fr', 
   dir_output = dir_analysis,
   file_format = 'csv')
 
 analysis_fns <- log_data %>%
   filter(procedure == 'multi_nacl') %>%
+  filter(exclude == 0) %>%
   pull(blockname)
 
 plt_nacl <- combined_plt_multi_spout_summary(
@@ -162,39 +163,17 @@ plt_nacl <- combined_plt_multi_spout_summary(
   dir_processed = dir_processed,
   analysis_fns = analysis_fns,
   log_data = log_data,
-  analysis_id = 'multi_nacl', 
+  analysis_id = 'multi_nacl_wr', 
   dir_output = dir_analysis,
   file_format = 'csv')
 
-
 plt_wr / plt_fr / plt_nacl
+
+
+dir_analysis
 ```
 
-```{r}
 
-# summary plot for number of sessions per subject, and number of trials / session
 
-log_data %>%
-  filter(procedure == 'multi_s') %>% 
-  filter(deprivation == 'wr') %>%
-  filter(subject == 'abb03')
 
-tibble(
-  #fn = list.files(dir_processed)
-  fn = manual_fns
-) %>%
-  mutate(sbj = substr(fn, 12,16)) %>%
-  group_by(sbj) %>%
-  summarise(count = n())
-
-plt_wr[[2]] %>%
-  select(subject, blockname) %>%
-  unique() %>%
-  group_by(subject) %>%
-  summarise(session_count = n())
-  
-
-manual_fns
-
-```
 

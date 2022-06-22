@@ -1,0 +1,3 @@
+stat,var_dv,var_id,var_within,effect,ss,df_num,ss_error,df_den,f,p_value
+aov_rm_one_within,lick_proportion,subject,solution,intercept,40.32679425078924,1,0.5634688138085187,10,715.6881314906868,1.2298697385669854e-10
+aov_rm_one_within,lick_proportion,subject,solution,solution,0.023551729080312514,4,0.10837472207315184,40,2.1731754997641737,0.08951167851842379

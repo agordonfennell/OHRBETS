@@ -555,15 +555,15 @@ aov_rm_one_within <- function(df, dir_output, prefix, var_id, var_dependent, var
 
 save_aov <- function(dir_output, prefix, anova_summary, pairs_hsd, df){
   if(!is.na(dir_output)){
-    fn <- str_c(dir_output, '/', prefix, '_aov.csv')
+    fn <- str_c(dir_output, prefix, '_aov.csv')
     anova_summary %>% write_csv(fn)
     print(str_c('saved file: ', fn))
 
-    fn <- str_c(dir_output, '/', prefix, '_aov_hsd.csv')
+    fn <- str_c(dir_output, prefix, '_aov_hsd.csv')
     pairs_hsd %>% write_csv(fn)
     print(str_c('saved file: ', fn))
 
-    fn <- str_c(dir_output, '/', prefix, '_data.csv')
+    fn <- str_c(dir_output, prefix, '_data.csv')
     df %>% write_csv(fn)
     print(str_c('saved file: ', fn))
   }
