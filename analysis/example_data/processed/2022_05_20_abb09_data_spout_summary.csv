@@ -1,0 +1,6 @@
+blockname,spout,lick_count_trial_mean,lick_count_total,lick_ts_first_mean,lick_ts_last_mean,lick_ili_mean_mean,trial_lick_proportion,experiment,cohort,date,solution,solution_type,solution_value
+2022_05_20_abb09,spout01,12.65,253,300,2106.8947368421054,147.75210488459632,0.95,abb,2,5/20/2022,sucrose10,sucrose,10
+2022_05_20_abb09,spout02,4.1,82,295.3,860.4,178.33395989974937,1,abb,2,5/20/2022,sucrose00,sucrose,0
+2022_05_20_abb09,spout03,19.9,398,294.95,2911.3,139.79117259078583,1,abb,2,5/20/2022,sucrose30,sucrose,30
+2022_05_20_abb09,spout04,7.6,152,250.75,1596.05,218.7003273809524,1,abb,2,5/20/2022,sucrose05,sucrose,5
+2022_05_20_abb09,spout05,18.75,375,285.7,2787.7,141.48987914862914,1,abb,2,5/20/2022,sucrose20,sucrose,20

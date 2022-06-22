@@ -319,16 +319,20 @@ plt_mean_trial_split <- function(df, var_y, var_facet, var_trial, limits_fill, b
 }
 
 # head-fixed multi-spout brief access ----------------------------------------------------------------------------------
+
+
 plt_binned_lick_rate <- function(df, facet_x, facet_y, xlab, ylab, plt_y_lims, plt_x_lims, plt_dims, viridis_scale){
+
 
   plt <- df %>%
     filter(time_bin >=plt_x_lims[1], time_bin < plt_x_lims[2]) %>%
-    ggplot(aes(time_bin, count_binned / (time_bin_width  / 1000), color = solution, fill = solution)) +
+    mutate(binned_freq = count_binned / (time_bin_width/1000)) %>%
+    ggplot(aes(time_bin, binned_freq, color = solution, fill = solution)) +
     stat_summary(fun.data = 'mean_se', geom = 'ribbon', aes(group = solution), alpha = 1/3, color = NA) +
     stat_summary(fun = 'mean', geom = 'line', aes(group = solution)) +
     scale_color_viridis_d(option = viridis_scale, end = 0.9) +
     scale_fill_viridis_d(option = viridis_scale, end = 0.9) +
-    coord_cartesian( xlim = c(0,xlim_max), expand = FALSE, clip = 'off') +
+    coord_cartesian( xlim = c(0, plt_x_lims[2]), expand = FALSE, clip = 'off') +
     scale_x_continuous(breaks = c(0,plt_x_lims[2]))
 
 
@@ -418,7 +422,7 @@ return_plt_spout_ids <- function(data_trial_summary, var_session, plotting_multi
   return(plt_spout_ids)
 }
 
-combined_plt_multi_spout_summary <- function(dir_extracted, analysis_fns, log_data, analysis_id, dir_output){
+combined_plt_multi_spout_summary <- function(dir_extracted, analysis_fns, log_data, analysis_id, dir_output, file_format){
 
   first_loop <- 1
 
@@ -429,6 +433,15 @@ combined_plt_multi_spout_summary <- function(dir_extracted, analysis_fns, log_da
       data_trial_summary_loop <- read_feather(str_c(dir_processed, blockname, '_data_trial_summary.', file_format))
       data_trial_binned_loop <- read_feather(str_c(dir_processed, blockname, '_data_trial_binned.', file_format))
       data_session_binned_spout_loop <- read_feather(str_c(dir_processed, blockname, '_data_session_binned_spout.', file_format))
+    } else if(str_detect(file_format, 'csv')){
+      session_parameters_loop <- read_csv(str_c(dir_extracted, blockname, '_param.', file_format), col_types = cols())
+      data_trial_loop <- read_csv(str_c(dir_processed, blockname, '_data_trial.', file_format), col_types = cols())
+      data_trial_summary_loop <- read_csv(str_c(dir_processed, blockname, '_data_trial_summary.', file_format), col_types = cols())
+      data_trial_binned_loop <- read_csv(str_c(dir_processed, blockname, '_data_trial_binned.', file_format), col_types = cols())
+      data_session_binned_spout_loop <- read_csv(str_c(dir_processed, blockname, '_data_session_binned_spout.', file_format), col_types = cols())
+    } else {
+      print('Error: incompatable file type (requires .feather or .csv)')
+      return(0)
     }
 
     if(first_loop){
@@ -457,13 +470,24 @@ combined_plt_multi_spout_summary <- function(dir_extracted, analysis_fns, log_da
   }
 
   vars_to_join <- c('subject', 'procedure', 'day')
-  vars_by <- c('file_name')
+  vars_by <- c('blockname')
 
-  session_parameters <- session_parameters %>% join_log_data(log_data %>% rename(file_name = beh_fn), vars_to_join, vars_by)
-  data_trial <- data_trial %>% join_log_data(log_data %>% rename(file_name = beh_fn), vars_to_join, vars_by)
-  data_trial_summary <- data_trial_summary %>% join_log_data(log_data %>% rename(file_name = beh_fn), vars_to_join, vars_by)
-  data_trial_binned <- data_trial_binned %>% join_log_data(log_data %>% rename(file_name = beh_fn), vars_to_join, vars_by)
-  data_session_binned_spout <- data_session_binned_spout %>% join_log_data(log_data %>% rename(file_name = beh_fn), vars_to_join, vars_by)
+  session_parameters <- session_parameters %>% join_log_data(log_data, vars_to_join, vars_by)
+  data_trial <- data_trial %>% join_log_data(log_data, vars_to_join, vars_by)
+  data_trial_summary <- data_trial_summary %>% join_log_data(log_data, vars_to_join, vars_by)
+  data_trial_binned <- data_trial_binned %>% join_log_data(log_data, vars_to_join, vars_by)
+  data_session_binned_spout <- data_session_binned_spout %>% join_log_data(log_data, vars_to_join, vars_by)
+
+
+  data_lick_proportion <- data_trial_summary %>%
+      group_by(solution, subject, blockname) %>%
+      summarise(lick_proportion = sum(trial_lick) / max(trial_num_tastant)) %>%
+      group_by(solution, subject) %>% summarise(lick_proportion = mean(lick_proportion))
+
+  data_session_summary <- data_trial_summary %>%
+    group_by(subject, solution) %>%
+    summarise(lick_count_mean = lick_count %>% mean(),
+              lick_count_total = lick_count %>% sum())
 
   plt_combined <- plt_multi_spout_summary(
     session_parameters,
@@ -471,9 +495,12 @@ combined_plt_multi_spout_summary <- function(dir_extracted, analysis_fns, log_da
     data_trial_summary,
     data_trial_binned,
     data_session_binned_spout,
+    data_lick_proportion,
+    data_session_summary,
     plotting_multi_sbj = 1,
     analysis_id =  analysis_id,
-    dir_output = dir_output
+    dir_output = dir_output,
+    blockname = NA
     )
 
     print('saving data')
@@ -482,7 +509,7 @@ combined_plt_multi_spout_summary <- function(dir_extracted, analysis_fns, log_da
     data_trial_binned %>% write_csv(str_c(dir_output, analysis_id, '_data_trial_binned.csv'))
     data_session_binned_spout %>% write_csv(str_c(dir_output, analysis_id, '_data_session_binned_spout.csv'))
     data_lick_proportion %>% write_csv(str_c(dir_output, analysis_id, '_data_lick_proportion.csv'))
-    data_session_summary %>% write_csv(str_c(dir_output, analysis_id, '_data_lick_proportion.csv'))
+    data_session_summary %>% write_csv(str_c(dir_output, analysis_id, '_data_session_summary.csv'))
 
     print('saving stats')
     stats_results <- data_session_summary %>%
@@ -494,7 +521,7 @@ combined_plt_multi_spout_summary <- function(dir_extracted, analysis_fns, log_da
     return(plt_combined)
 }
 
-batch_session_plt_multi_spout_summary <- function(dir_processed, file_format = 'feather', manual_blocknames = NA, overwrite = 0){
+batch_session_plt_multi_spout_summary <- function(dir_processed, dir_extracted, file_format = 'csv', manual_blocknames = NA, overwrite = 0){
 
   fns_dir_processed <- list.files(dir_processed)
 
@@ -558,11 +585,15 @@ batch_session_plt_multi_spout_summary <- function(dir_processed, file_format = '
      data_trial_summary <- read_feather(str_c(dir_processed, blockname, '_data_trial_summary.', file_format))
      data_trial_binned <- read_feather(str_c(dir_processed, blockname, '_data_trial_binned.', file_format))
      data_session_binned_spout <- read_feather(str_c(dir_processed, blockname, '_data_session_binned_spout.', file_format))
+   } else if(str_detect(file_format, 'csv')){
+     session_parameters <- read_csv(str_c(dir_extracted, blockname, '_param.', file_format),col_types = cols())
+     data_trial <- read_csv(str_c(dir_processed, blockname, '_data_trial.', file_format), col_types = cols())
+     data_trial_summary <- read_csv(str_c(dir_processed, blockname, '_data_trial_summary.', file_format), col_types = cols())
+     data_trial_binned <- read_csv(str_c(dir_processed, blockname, '_data_trial_binned.', file_format), col_types = cols())
+     data_session_binned_spout <- read_csv(str_c(dir_processed, blockname, '_data_session_binned_spout.', file_format), col_types = cols())
+  } else {
+     print('Error: incompatable file type (requires .feather or .csv)')
    }
-
-  if(str_detect(file_format, 'csv')){
-    data_trial <- read_csv(str_c(dir_processed, blockname, '_data_trial.', file_format))
-  }
 
     plt_multi_spout_summary(
       session_parameters,
@@ -570,14 +601,18 @@ batch_session_plt_multi_spout_summary <- function(dir_processed, file_format = '
       data_trial_summary,
       data_trial_binned,
       data_session_binned_spout,
+      NA,
+      NA,
       plotting_multi_sbj = 0,
       analysis_id = NA,
-      dir_output = dir_processed
+      dir_output = dir_processed,
+      blockname = blockname
     )
   }
 }
 
-plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_summary, data_trial_binned, data_session_binned_spout, plotting_multi_sbj, analysis_id, dir_output){
+plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_summary, data_trial_binned, data_session_binned_spout, data_lick_proportion,
+    data_session_summary, plotting_multi_sbj, analysis_id, dir_output, blockname){
   # return color scale based on solutions
   viridis_scale <- return_viridis_scale(data_trial)
 
@@ -592,7 +627,7 @@ plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_s
   }
 
   trial_count <- data_trial_summary %>%
-    group_by(file_name) %>%
+    group_by(blockname) %>%
     filter(trial_num == max(trial_num)) %>%
     ungroup() %>%
     select(trial_num) %>%
@@ -663,7 +698,7 @@ plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_s
 
   if(plotting_multi_sbj == 1){
     plt03 <- data_trial_binned %>%
-      group_by(subject, solution, time_bin) %>%
+      group_by(subject, solution, time_bin_width, time_bin) %>%
       summarise(count_binned = count_binned %>% mean()) %>%
       plt_binned_lick_rate(
         df = .,
@@ -718,12 +753,6 @@ if(plotting_multi_sbj == 0){
 }
 
 if(plotting_multi_sbj == 1){
-  data_session_summary <- data_trial_summary %>%
-    group_by(subject, solution) %>%
-    summarise(lick_count_mean = lick_count %>% mean(),
-              lick_count_total = lick_count %>% sum())
-
-
   plt06 <- data_session_summary %>%
     ggplot(aes(solution, lick_count_mean, color = solution)) +
     geom_beeswarm(cex = 3, alpha = 1/3, stroke = 0.2, shape = 21, size = 3, fill = NA) +
@@ -752,11 +781,6 @@ if(plotting_multi_sbj == 1){
   }
 
   if(plotting_multi_sbj == 1){
-    data_lick_proportion <- data_trial_summary %>%
-      group_by(solution, subject, file_name) %>%
-      summarise(lick_proportion = sum(trial_lick) / max(trial_num_tastant)) %>%
-      group_by(solution, subject) %>% summarise(lick_proportion = mean(lick_proportion))
-
     plt07 <- data_lick_proportion %>%
       ggplot(aes(solution, lick_proportion, color = solution)) +
       geom_beeswarm(cex = 3, alpha = 1/3, stroke = 0.2, shape = 21, size = 3, fill = NA) +
@@ -771,7 +795,7 @@ if(plotting_multi_sbj == 1){
 
   plt07 <- plt07 %>% remove_x_all()
 
-# split into single subject vs multi subject
+
   if(plotting_multi_sbj == 0){
     plt08 <- data_session_binned_spout %>%
       ggplot(aes(trial_split + 5, lick_count_mean, color = solution)) +
@@ -808,8 +832,8 @@ if(plotting_multi_sbj == 1){
                             plt_dim = NA)
 
   plt_ili <- data_trial %>%
-    arrange(file_name, trial_num, event_ts_rel) %>%
-    group_by(file_name, trial_num) %>%
+    arrange(blockname, trial_num, event_ts_rel) %>%
+    group_by(blockname, trial_num) %>%
     mutate(ili = event_ts_rel - lag(event_ts_rel)) %>%
     filter(ili < 1000) %>%
     ggplot(aes(ili, color = solution)) +
@@ -841,7 +865,7 @@ if(plotting_multi_sbj == 1){
        plot_layout(widths = unit(c(1, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), c('cm','cm','cm')),
                    heights = unit(c(5), c('cm')),
                    guides = 'collect') +
-      plot_annotation(title = fn)
+      plot_annotation(title = blockname)
 
     print('saving plots: ')
     print(str_c('~', dir_output, blockname, '_plt_session_summary.pdf'))
@@ -876,7 +900,7 @@ if(plotting_multi_sbj == 1){
        plot_layout(widths = unit(c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5), c('cm','cm','cm')),
                    heights = unit(c(5), c('cm')),
                    guides = 'collect') +
-      plot_annotation(title = fn)
+      plot_annotation(title = analysis_id)
 
     print('saving plots: ')
     print(str_c('~', dir_output, analysis_id, '_plt_session_summary.pdf'))

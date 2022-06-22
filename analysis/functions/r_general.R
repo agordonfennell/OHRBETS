@@ -502,3 +502,69 @@ return_event_binned_counts <- function(df_events, var_relative_ts, time_start, t
 
   return(df_event_binned)
 }
+
+# stats -----
+## rm anova one within ------------------------------------------------------------------------------------------------
+aov_rm_one_within <- function(df, dir_output, prefix, var_id, var_dependent, var_within){
+  require(afex)
+
+  anova_model <- aov_ez(
+    id = var_id,
+    dv = var_dependent,
+    data = df,
+    within = var_within,
+    anova_table=list(correction="none", es = "none"))
+
+
+  label_anova <- c("intercept", var_within) %>% as_tibble()
+
+  anova_summary <-  summary(anova_model)[[4]][] %>%
+                    as_tibble() %>%
+                    bind_cols(label_anova,.) %>%
+                    rename("effect" = "value",
+                           "ss" = "Sum Sq",
+                           "df_num" = "num Df",
+                           "ss_error" = "Error SS",
+                           "df_den" = "den Df",
+                           "f" = "F value",
+                           "p_value" = "Pr(>F)")
+
+  anova_summary <- anova_summary %>%
+    mutate(stat = 'aov_rm_one_within',
+           var_dv      = var_dependent,
+           var_id      = var_id,
+           var_within  = var_within) %>%
+    select(stat, var_dv, var_id, var_within, everything())
+
+
+    interaction <- paste("~", var_within, sep = "")
+
+    emm <- emmeans(anova_model, formula(interaction))
+
+    pairs_hsd <- pairs(emm) %>%
+      as_tibble() %>%
+      separate(contrast, into = c('contrast1_within', 'contrast2_within'), sep = '-') %>%
+      mutate_if(is.character, str_trim) %>%
+      rename('p_value' = 'p.value',
+             't_ratio' = 't.ratio')
+
+  save_aov(dir_output, prefix, anova_summary, pairs_hsd, df)
+
+  return(list(anova_model, anova_summary, pairs_hsd))
+}
+
+save_aov <- function(dir_output, prefix, anova_summary, pairs_hsd, df){
+  if(!is.na(dir_output)){
+    fn <- str_c(dir_output, '/', prefix, '_aov.csv')
+    anova_summary %>% write_csv(fn)
+    print(str_c('saved file: ', fn))
+
+    fn <- str_c(dir_output, '/', prefix, '_aov_hsd.csv')
+    pairs_hsd %>% write_csv(fn)
+    print(str_c('saved file: ', fn))
+
+    fn <- str_c(dir_output, '/', prefix, '_data.csv')
+    df %>% write_csv(fn)
+    print(str_c('saved file: ', fn))
+  }
+}

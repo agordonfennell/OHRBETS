@@ -13,11 +13,11 @@ require(feather)
 # determine file date
 file_date <- function(x){
   x <- x %>%
-    mutate(temp_file_name = file_name) %>%
-    separate(temp_file_name, into = c('date_year', 'date_month', 'date_day', 'subject'), sep = "_") %>%
+    mutate(temp_blockname = blockname) %>%
+    separate(temp_blockname, into = c('date_year', 'date_month', 'date_day', 'subject'), sep = "_") %>%
     mutate(date = str_c(date_year, date_month, date_day, sep = "_")) %>%
     select(-date_year, -date_month, -date_day, -subject) %>%
-    select(file_name, date, everything())
+    select(blockname, date, everything())
   
   return(x)
 }
@@ -69,7 +69,7 @@ extract_param_dynamic <- function(x){
 extract_event <- function(x){
   event <- x %>%
     filter(id_type == 'event') %>%
-    select(file_name, event_key, event_id, event_id_char, event_ts)
+    select(blockname, event_key, event_id, event_id_char, event_ts)
   
   event <- event %>% file_date()
   
@@ -96,7 +96,13 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
   dir_list <- list.files(dir_raw, pattern="*.csv")
 
   if(length(dir_list) == 0){
-    print("WARNING: No files in dir_raw")
+    if(file.exists(file.path(dir_raw))){
+      print("WARNING: No files in dir_raw")
+    } else {
+      print("WARNING: dir_raw does not exist")
+    }
+
+
     return()
   }
 
@@ -148,15 +154,15 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
 
   for(dir in dir_list){
 
-    file_name <- basename(dir) %>% str_split("[.]")
-    file_name <- file_name[[1]][1]
+    blockname <- basename(dir) %>% str_split("[.]")
+    blockname <- blockname[[1]][1]
 
     print("--------------------------")
-    print(str_c('extracting file: ', file_name))
+    print(str_c('extracting file: ', blockname))
 
     loop_data <- suppressWarnings( # supress parsing warning
       read_csv(str_c(dir_raw, '/', dir), col_names = c('event_id', 'event_ts'), col_types = cols()) %>%
-        mutate(file_name = file_name)
+        mutate(blockname)
     )
 
     if(sum(!is.na(loop_data %>% pull(event_ts))) == 0){
@@ -167,7 +173,7 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
                event_ts = as.numeric(event_ts))
     }
 
-  loop_data <- loop_data %>% select(file_name, event_id, event_ts) %>%
+  loop_data <- loop_data %>% select(blockname, event_id, event_ts) %>%
     left_join(key_events, by = 'event_id')
 
 
@@ -180,47 +186,47 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
   
   if(sum(!is.na(loop_data_event))>0){
     if(file_format_output == 'csv'){
-      loop_data_event         %>% write_csv(str_c(dir_processed, file_name, '_event.csv'))
-      print(str_c(dir_processed, file_name, '_event.csv'))
+      loop_data_event         %>% write_csv(str_c(dir_processed, blockname, '_event.csv'))
+      print(str_c(dir_processed, blockname, '_event.csv'))
     }
 
     if(file_format_output == 'feather'){
-      loop_data_event         %>% write_feather(str_c(dir_processed, file_name, '_event.feather'))
-      print(str_c(dir_processed, file_name, '_event.feather'))
+      loop_data_event         %>% write_feather(str_c(dir_processed, blockname, '_event.feather'))
+      print(str_c(dir_processed, blockname, '_event.feather'))
     }
 
   } else {
-    print(str_c(file_name, ' has no events in serial data'))
+    print(str_c(blockname, ' has no events in serial data'))
   }
   
   if(sum(!is.na(loop_data_param))>0){
     if(file_format_output == 'csv'){
-      loop_data_param         %>% write_csv(str_c(dir_processed, file_name, '_param.csv'))
-      print(str_c(dir_processed, file_name, '_param.csv'))
+      loop_data_param         %>% write_csv(str_c(dir_processed, blockname, '_param.csv'))
+      print(str_c(dir_processed, blockname, '_param.csv'))
     }
 
     if(file_format_output == 'feather'){
-      loop_data_param         %>% write_feather(str_c(dir_processed, file_name, '_param.feather'))
-      print(str_c(dir_processed, file_name, '_param.feather'))
+      loop_data_param         %>% write_feather(str_c(dir_processed, blockname, '_param.feather'))
+      print(str_c(dir_processed, blockname, '_param.feather'))
     }
 
   } else {
-    print(str_c(file_name, ' has no params in serial data'))
+    print(str_c(blockname, ' has no params in serial data'))
   }
   
   if(sum(!is.na(loop_data_param_dynamic))>0){
     if(file_format_output == 'csv'){
-      loop_data_param_dynamic %>% write_csv(str_c(dir_processed, file_name, '_param_dynamic.csv'))
-      print(str_c(dir_processed, file_name, '_param_dynamic.csv'))
+      loop_data_param_dynamic %>% write_csv(str_c(dir_processed, blockname, '_param_dynamic.csv'))
+      print(str_c(dir_processed, blockname, '_param_dynamic.csv'))
     }
 
     if(file_format_output == 'feather'){
-      loop_data_param_dynamic %>% write_feather(str_c(dir_processed, file_name, '_param_dynamic.feather'))
-      print(str_c(dir_processed, file_name, '_param_dynamic.feather'))
+      loop_data_param_dynamic %>% write_feather(str_c(dir_processed, blockname, '_param_dynamic.feather'))
+      print(str_c(dir_processed, blockname, '_param_dynamic.feather'))
     }
 
   } else {
-    print(str_c(file_name, ' has no dynamic params in serial data'))
+    print(str_c(blockname, ' has no dynamic params in serial data'))
   }
   }
 }
@@ -234,7 +240,7 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
   # inputs:
   #  - dir_extraction (string): path to extracted datasets for each session ending with forward slash '/' (e.g. ./data/extracted/)
   #  - dir_processed (string): output directory for processed datasets
-  #  - log_data (dataframe): variables for the file_name, experiment, cohort, date used for assigning spout ids listed in log_multi_spout_ids
+  #  - log_data (dataframe): variables for the blockname, experiment, cohort, date used for assigning spout ids listed in log_multi_spout_ids
   #  - log_multi_spout_ids (df): variables for date, experiment, cohort, date, spout, and solution
   #  - file_format_output output file format ('csv' or 'feather')
   #  - manual_fns (vector of strings): vector of file names to process, use NA to process all data in dir_extraction
@@ -277,8 +283,16 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
     print(str_c("processing fn: ", fn))
 
     # read in combined data
-    data          <- read_feather(str_c(dir_extraction, fn, '_event.feather'))
-    param_dynamic <- read_feather(str_c(dir_extraction, fn, '_param_dynamic.feather'))
+    if(str_detect(file_format_output, 'feather')){
+      data          <- read_feather(str_c(dir_extraction, fn, '_event.feather'))
+      param_dynamic <- read_feather(str_c(dir_extraction, fn, '_param_dynamic.feather'))
+    } else if(str_detect(file_format_output, 'csv')){
+      data          <- read_csv(str_c(dir_extraction, fn, '_event.csv'), col_types = cols())
+      param_dynamic <- read_csv(str_c(dir_extraction, fn, '_param_dynamic.csv'), col_types = cols())
+    } else {
+      print('Error: incompatable file type (requires .feather or .csv)')
+    }
+
 
     # set parameters
     trial_start_id     <- c('spout_extended')
@@ -337,7 +351,7 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
 }
 
 # Processing execution -------------------------------------------------------------------------------------------------
-process_arduino <- function(data, key_events, log_data, dir_processed, wheel_diameter = 63){
+process_arduino <- function(data, key_events, log_data, dir_processed, file_format_output, wheel_diameter = 63){
   # data: output    from combine_extracted_serial_output()
   # key_events:     arduino event key tibble
   # log_data:       log for each file within the data
@@ -358,8 +372,7 @@ process_arduino <- function(data, key_events, log_data, dir_processed, wheel_dia
   log_data <- log_data %>%
     mutate(wheel_circumfrence = pi * wheel_diameter) %>%
     mutate(resolution_rotation = 1 / (ppr / resolution)) %>%
-    mutate(rotation = resolution_rotation * wheel_circumfrence) %>%
-    rename(file_name = beh_fn)
+    mutate(rotation = resolution_rotation * wheel_circumfrence)
 
   # join data log to data
   data <- data %>%
@@ -369,14 +382,14 @@ process_arduino <- function(data, key_events, log_data, dir_processed, wheel_dia
   # create cumulative event count
   data_rotation <- data %>%
     filter(event_id_char %in% c('active_rotation', 'inactive_rotation')) %>%
-    group_by(file_name, event_id, event_id_char) %>%
-    arrange(file_name, event_ts) %>%
+    group_by(blockname, event_id, event_id_char) %>%
+    arrange(blockname, event_ts) %>%
     mutate(count_cummulative = row_number()) %>%
     mutate(rotation_relative      = cumsum(rotation),
            rotation_relative_turn = cumsum(resolution_rotation)) %>%
     mutate(rotation_absolute      = ifelse(event_id_char == 'inactive_rotation', -1 * rotation,            1 * rotation),
            rotation_absolute_turn = ifelse(event_id_char == 'inactive_rotation', -1 * resolution_rotation, 1 * resolution_rotation)) %>%
-    group_by(file_name) %>%
+    group_by(blockname) %>%
     mutate(rotation_absolute      = cumsum(rotation_absolute),
            rotation_absolute_turn = cumsum(rotation_absolute_turn)
            ) %>%
@@ -384,7 +397,7 @@ process_arduino <- function(data, key_events, log_data, dir_processed, wheel_dia
 
   # create summary
   data_summary <- data %>%
-    group_by(file_name, event_id_char, rotation, resolution_rotation) %>%
+    group_by(blockname, event_id_char, rotation, resolution_rotation) %>%
     summarise(event_count = n()) %>%
     mutate(rotation      = ifelse(event_id_char %in% c('active_rotation', 'inactive_rotation'), event_count * rotation, NA)) %>%
     mutate(rotation_turn = ifelse(event_id_char %in% c('active_rotation', 'inactive_rotation'), event_count * resolution_rotation,NA)) %>%
@@ -392,9 +405,18 @@ process_arduino <- function(data, key_events, log_data, dir_processed, wheel_dia
     ungroup()
 
   # save outputs
-  data          %>% write_feather(str_c(dir_processed, 'combined_event_processed.feather'))
-  data_rotation %>% write_feather(str_c(dir_processed, 'combined_rotation.feather'))
-  data_summary  %>% write_feather(str_c(dir_processed, 'combined_summary.feather'))
+  if(str_detect(file_format_output, 'feather')){
+    data          %>% write_feather(str_c(dir_processed, 'combined_event_processed.feather'))
+    data_rotation %>% write_feather(str_c(dir_processed, 'combined_rotation.feather'))
+    data_summary  %>% write_feather(str_c(dir_processed, 'combined_summary.feather'))
+  } else if(str_detect(file_format_output, 'csv')){
+    data          %>% write_csv(str_c(dir_processed, 'combined_event_processed.csv'))
+    data_rotation %>% write_csv(str_c(dir_processed, 'combined_rotation.csv'))
+    data_summary  %>% write_csv(str_c(dir_processed, 'combined_summary.csv'))
+  } else {
+    print('Error: incompatable file type (requires .feather or .csv)')
+  }
+
 }
 
 
@@ -405,35 +427,35 @@ generate_trial_ids_multispout <- function(data, param_dynamic, trial_start_id){
   # trial_start_id defines the event_id_char value that denotes the start of a trial
 
   # returns tibble with
-  #    file_name:      filename string (key value)
+  #    blockname:      filename string (key value)
   #    trial_start_ts: time of trial start
   #    trial_num:      number of trial
   #    trial_id:       identification of trial (spout id)
 
   # extract trial_id (spout / trial) from param_dynamic
   join_current_pos <- param_dynamic %>%
-    select(file_name, param_dynamic, param_ts, param_value) %>%
+    select(blockname, param_dynamic, param_ts, param_value) %>%
     filter(param_dynamic == 'current_pos') %>%                     # filter to current position of radial spout
     filter(!is.na(param_value)) %>%                                # remove
     rename(trial_id = param_value) %>%
     mutate(trial_id = str_c('spout0', as.character(trial_id + 1))) %>%  # convert spout_id value to spout_id character
-    arrange(file_name, param_ts) %>%     # arrange by param_ts to determine trial number
-    group_by(file_name) %>%
+    arrange(blockname, param_ts) %>%     # arrange by param_ts to determine trial number
+    group_by(blockname) %>%
     mutate(trial_num = row_number()) %>% # generate trial_num based on row
     select(-param_ts, -param_dynamic)
 
   # gernate trial ids from data and join_current_pos
   trial_ids <- data %>%
-    select(file_name, event_id_char, event_ts) %>%
+    select(blockname, event_id_char, event_ts) %>%
     filter(event_id_char %in% trial_start_id) %>% # filter to spout_extended for trial onsetd
-    group_by(file_name) %>%                # for each file_name
+    group_by(blockname) %>%                # for each blockname
     filter(event_ts > min(event_ts)) %>%   # remove first event (this will remove spout extention setup)
-    arrange(file_name, event_ts) %>%       # arrange by event_ts to determine trial number
+    arrange(blockname, event_ts) %>%       # arrange by event_ts to determine trial number
     mutate(trial_num = row_number()) %>%   # generate trial_num based on row
-    left_join(join_current_pos, by = c("file_name", "trial_num")) %>%
+    left_join(join_current_pos, by = c("blockname", "trial_num")) %>%
     rename(trial_start_ts = event_ts) %>%
     select(-event_id_char) %>%
-    group_by(file_name, trial_id) %>%
+    group_by(blockname, trial_id) %>%
     mutate(trial_num_tastant = row_number()) %>%
     ungroup()
 
@@ -444,7 +466,7 @@ generate_trial_summary_multispout <- function(data_trial, trial_ids){
   # uses data_trial and  trial_ids to compute summary statitics for each trial
   #
   # returns tibble with
-  #   file_name: file name string (key value)
+  #   blockname: file name string (key value)
   #   trial_start_ts: start time for each trial (obtained from trials_ids)
   #   trial_num:      number of trial (obtained from trials_ids)
   #   trial_id:       id of trial (obtained from trials_ids)
@@ -455,8 +477,8 @@ generate_trial_summary_multispout <- function(data_trial, trial_ids){
 
   # compute trial data summary from data defined in data_trial
   data_trial_summary <- data_trial %>%
-    group_by(file_name, trial_start_ts, trial_num, trial_num_tastant, trial_id) %>%
-    arrange(file_name, trial_start_ts, event_ts) %>%
+    group_by(blockname, trial_start_ts, trial_num, trial_num_tastant, trial_id) %>%
+    arrange(blockname, trial_start_ts, event_ts) %>%
     mutate(lick_ili = event_ts - lag(event_ts)) %>%
     summarise(lick_count = n(),
               lick_ts_first = min(event_ts_rel),
@@ -467,7 +489,7 @@ generate_trial_summary_multispout <- function(data_trial, trial_ids){
 
   # join summary to trial_ids in order to avoid implicit 0s
   data_trial_summary <- data_trial_summary %>%
-    left_join(trial_ids, ., by = c("file_name", "trial_start_ts", "trial_num", 'trial_num_tastant', "trial_id")) %>%
+    left_join(trial_ids, ., by = c("blockname", "trial_start_ts", "trial_num", 'trial_num_tastant', "trial_id")) %>%
     mutate(lick_count = ifelse(is.na(lick_count), 0, lick_count), # fill in 0s for trials without a lick listed in data_trial
            trial_lick = ifelse(is.na(trial_lick), 0, trial_lick)) # ...
 
@@ -477,7 +499,7 @@ generate_trial_summary_multispout <- function(data_trial, trial_ids){
 
 generate_session_spout_summary_multispout <- function(data_trial_summary){
   data_session_summary <- data_trial_summary %>%
-    group_by(file_name, trial_id) %>%
+    group_by(blockname, trial_id) %>%
     summarise(lick_count_trial_mean = lick_count %>% mean(),
               lick_count_total      = lick_count %>% sum(),
               lick_ts_first_mean    = lick_ts_first %>% mean(na.rm = TRUE),
@@ -497,8 +519,8 @@ join_multi_spout_solution_id <- function(df, log_data, log_multi_spout_ids){
   }
 
   df %>%
-    left_join(log_data %>% select(file_name = beh_fn, experiment, cohort, date),
-              by = "file_name") %>%
+    left_join(log_data %>% select(blockname, experiment, cohort, date),
+              by = "blockname") %>%
     left_join(log_multi_spout_ids %>% select(experiment, cohort, date, spout, solution),
               by = c("experiment", "cohort", "date", "spout"))
 
@@ -546,7 +568,7 @@ generate_trial_events <- function(data, trial_ids, trial_start_id, events_of_int
   #   used to generate the trial_ids
   #
   # returns tibble with
-  #   file_name: file name string (key value)
+  #   blockname: file name string (key value)
   #   event_id_char: event names defined in key_events, filetered to events defined in events_of_interest
   #   event_ts: time stamp in milliseconds for each event
   #   trial_start_ts: start time for each trial (obtained from trials_ids)
@@ -556,9 +578,9 @@ generate_trial_events <- function(data, trial_ids, trial_start_id, events_of_int
 
   data_trial <- data %>%
     filter(event_id_char %in% c(events_of_interest, trial_start_id)) %>%
-    select(file_name, event_id_char, event_ts) %>%
-    left_join(trial_ids %>% mutate(event_ts = trial_start_ts), by = c("file_name", "event_ts")) %>%
-    arrange(file_name, event_ts) %>%
+    select(blockname, event_id_char, event_ts) %>%
+    left_join(trial_ids %>% mutate(event_ts = trial_start_ts), by = c("blockname", "event_ts")) %>%
+    arrange(blockname, event_ts) %>%
     fill(c(trial_num, trial_num_tastant, trial_id, trial_start_ts)) %>%
     filter(!is.na(trial_num)) %>%
     filter(event_id_char %in% events_of_interest) %>%
@@ -576,24 +598,24 @@ generate_trial_binned_counts <- function(data_trial, trial_ids, time_bin_width, 
   #  - time_bin_width: width of time bin (ms)
   #  - time_bin_range: 2 element vector with start and end of range (ms)
 
-  grouping_vars  <- c('file_name', 'trial_id')
+  grouping_vars  <- c('blockname', 'trial_id')
   var_trial      <- 'trial_num'
   var_time_stamp <- 'event_ts_rel'
 
   # find files to analyze that are in both trial_ds and data_trial
   files_to_process <- inner_join(
-    trial_ids   %>% select(file_name) %>% unique(),
-    data_trial  %>% select(file_name) %>% unique(),
-    by = 'file_name') %>%
-    pull(file_name)
+    trial_ids   %>% select(blockname) %>% unique(),
+    data_trial  %>% select(blockname) %>% unique(),
+    by = 'blockname') %>%
+    pull(blockname)
 
   # for each file, compute binned counts
-  for (file_name_loop in files_to_process){
+  for (blockname_loop in files_to_process){
     trial_ids_loop <- trial_ids %>%
-      filter(file_name == file_name_loop)
+      filter(blockname == blockname_loop)
 
     data_trial_loop <- data_trial %>%
-      filter(file_name == file_name_loop)
+      filter(blockname == blockname_loop)
 
     n_trials <- nrow(trial_ids_loop)
 
@@ -603,33 +625,33 @@ generate_trial_binned_counts <- function(data_trial, trial_ids, time_bin_width, 
                           labels = seq(time_bin_range[1], time_bin_range[2]-time_bin_width, time_bin_width))) %>%
       mutate(time_bin = time_bin %>% as.character() %>% as.double()) %>%
       filter(!is.na(time_bin)) %>%
-      group_by(file_name, trial_start_ts, trial_num, trial_id, time_bin) %>%
+      group_by(blockname, trial_start_ts, trial_num, trial_id, time_bin) %>%
       summarise(count_binned = n(), .groups = 'drop') %>%
-      group_by(file_name) %>%
-      select(file_name, trial_num, time_bin, count_binned) %>%
+      group_by(blockname) %>%
+      select(blockname, trial_num, time_bin, count_binned) %>%
       complete(trial_num = 1:n_trials,
                time_bin = seq(time_bin_range[1], time_bin_range[2]-time_bin_width, time_bin_width),
                fill = list(count_binned = 0)) %>%
-      left_join(trial_ids_loop, by = c('file_name', 'trial_num'))
+      left_join(trial_ids_loop, by = c('blockname', 'trial_num'))
 
-    if(file_name_loop == files_to_process[1]){
+    if(blockname_loop == files_to_process[1]){
       data_trial_binned <- data_trial_binned_loop
     } else {
       data_trial_binned <- data_trial_binned_loop %>% bind_rows(data_trial_binned,.)
     }
   }
-
+  
   data_trial_binned <- data_trial_binned %>%
     mutate(time_bin_width = time_bin_width)
-
+  
   return(data_trial_binned)
 }
 
 generate_session_binned_count_spout <- function(data_trial_summary, session_trial_width, session_trial_range){
   data_trial_summary %>%
       mutate(trial_split = cut(trial_num, seq(session_trial_range[1], session_trial_range[2], session_trial_width), label = seq(session_trial_range[1], session_trial_range[2] - session_trial_width, session_trial_width))) %>%
-      group_by(file_name, trial_split, spout, solution) %>%
-      select(file_name, trial_split, spout, solution, lick_count) %>%
+      group_by(blockname, trial_split, spout, solution) %>%
+      select(blockname, trial_split, spout, solution, lick_count) %>%
       summarise(lick_count_total  = lick_count %>% sum(),
                 lick_count_mean   = lick_count %>% mean(),
                 lick_count_median = lick_count %>% median(),
@@ -641,8 +663,8 @@ generate_session_binned_count_spout <- function(data_trial_summary, session_tria
 generate_session_binned_count <- function(data_trial_summary, session_trial_width, session_trial_range){
   data_trial_summary %>%
       mutate(trial_split = cut(trial_num, seq(session_trial_range[1], session_trial_range[2], session_trial_width), label = seq(session_trial_range[1], session_trial_range[2] - session_trial_width, session_trial_width))) %>%
-      group_by(file_name, trial_split) %>%
-      select(file_name, trial_split, spout, solution, lick_count) %>%
+      group_by(blockname, trial_split) %>%
+      select(blockname, trial_split, spout, solution, lick_count) %>%
       summarise(lick_count_total  = lick_count %>% sum(),
                 lick_count_mean   = lick_count %>% mean(),
                 lick_count_median = lick_count %>% median(),
