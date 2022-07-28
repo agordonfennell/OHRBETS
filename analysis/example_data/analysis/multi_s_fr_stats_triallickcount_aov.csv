@@ -1,3 +1,0 @@
-stat,var_dv,var_id,var_within,effect,ss,df_num,ss_error,df_den,f,p_value
-aov_rm_one_within,lick_count_mean,subject,solution,intercept,2983.8833815188827,1,261.43984300295926,10,114.13269481978337,8.645368188868209e-7
-aov_rm_one_within,lick_count_mean,subject,solution,solution,772.1425475319568,4,78.86636086068985,40,97.90518278076446,4.1806496671765317e-20

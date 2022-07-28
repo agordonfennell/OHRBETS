@@ -1,6 +1,0 @@
-blockname,spout,lick_count_trial_mean,lick_count_total,lick_ts_first_mean,lick_ts_last_mean,lick_ili_mean_mean,trial_lick_proportion,experiment,cohort,date,solution,solution_type,solution_value
-2022_06_13_abb07,spout01,10.05,201,158.25,1286.75,100.85957456104971,1,abb,2,6/13/2022,nacl025,nacl,0.25
-2022_06_13_abb07,spout02,3.8,76,149.55,835.1,230.52367424242425,1,abb,2,6/13/2022,nacl100,nacl,1
-2022_06_13_abb07,spout03,23.55,471,130.45,2932.75,124.44335262563523,1,abb,2,6/13/2022,nacl000,nacl,0
-2022_06_13_abb07,spout04,0,0,NA,NA,NA,0,abb,2,6/13/2022,nacl150,nacl,1.5
-2022_06_13_abb07,spout05,9.55,191,134.1,1705.3,198.52520625253467,1,abb,2,6/13/2022,nacl050,nacl,0.5
