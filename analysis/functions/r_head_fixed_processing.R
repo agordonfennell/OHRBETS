@@ -8,7 +8,6 @@
 require(tidyverse)
 require(lubridate)
 require(readxl)
-require(feather)
 
 # determine file date
 file_date <- function(x){
@@ -259,9 +258,15 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
 
 
   # use manual_fns to filter to predetermined set
+  if(!is.vector(manual_fns)){
+    print("Aborted pre processing... manual_fns is not a vector")
+    return()
+  }
+
   if(sum(!is.na(manual_fns)) > 0){
     dir_extraction_fns <- dir_extraction_fns[dir_extraction_fns %in% manual_fns]
   }
+
 
   # determine files already in dir_processed and remove from dir_extraction_fns
   dir_processed_fns <- list.files(dir_processed)
@@ -300,6 +305,8 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
 
     # generate trial ids
     trial_ids          <- generate_trial_ids_multispout(data, param_dynamic, trial_start_id)
+
+
 
     # generate trial summaries
     data_trial         <- generate_trial_events(data, trial_ids, trial_start_id, events_of_interest) # events relative to trial onsets
@@ -634,15 +641,16 @@ generate_trial_binned_counts <- function(data_trial, trial_ids, time_bin_width, 
                fill = list(count_binned = 0)) %>%
       left_join(trial_ids_loop, by = c('blockname', 'trial_num'))
 
+    data_trial_binned_loop <- data_trial_binned_loop %>%
+    mutate(time_bin_width = time_bin_width)
+
     if(blockname_loop == files_to_process[1]){
       data_trial_binned <- data_trial_binned_loop
     } else {
       data_trial_binned <- data_trial_binned_loop %>% bind_rows(data_trial_binned,.)
     }
   }
-  
-  data_trial_binned <- data_trial_binned %>%
-    mutate(time_bin_width = time_bin_width)
+
   
   return(data_trial_binned)
 }
