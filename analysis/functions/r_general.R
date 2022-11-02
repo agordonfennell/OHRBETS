@@ -568,3 +568,10 @@ save_aov <- function(dir_output, prefix, anova_summary, pairs_hsd, df){
     print(str_c('saved file: ', fn))
   }
 }
+
+format_dir <- function(x){
+  if(str_sub(x, nchar(x), nchar(x)) != '/'){
+    x <- x %>% str_c('/')
+  }
+  return(x)
+}

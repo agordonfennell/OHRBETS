@@ -488,14 +488,14 @@ combined_plt_multi_spout_summary <- function(dir_extracted, dir_processed, analy
     # combine dataframes
     if(first_loop){
       session_parameters <- session_parameters_loop
-      data_trial <- data_trial_loop
+      if(nrow(data_trial_loop > 0)){data_trial <- data_trial_loop}
       data_trial_summary <- data_trial_summary_loop
       data_trial_binned <- data_trial_binned_loop
       data_session_binned_spout <- data_session_binned_spout_loop
       first_loop <- 0
     } else {
       session_parameters <- session_parameters_loop %>% bind_rows(session_parameters,.)
-      data_trial <- data_trial_loop %>% bind_rows(data_trial,.)
+      if(nrow(data_trial_loop > 0)){data_trial <- data_trial_loop %>% bind_rows(data_trial,.)}
       data_trial_summary <- data_trial_summary_loop %>% bind_rows(data_trial_summary,.)
       data_trial_binned <- data_trial_binned_loop %>% bind_rows(data_trial_binned,.)
       data_session_binned_spout <- data_session_binned_spout_loop %>% bind_rows(data_session_binned_spout,.)
@@ -683,6 +683,7 @@ plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_s
     return(0)
   }
 
+
   trial_count <- data_trial_summary %>%
     group_by(blockname) %>%
     filter(trial_num == max(trial_num)) %>%
@@ -690,6 +691,11 @@ plt_multi_spout_summary <- function(session_parameters, data_trial, data_trial_s
     select(trial_num) %>%
     unique() %>%
     pull()
+
+  if(length(trial_count > 1)){
+    print("warning: datasets contain different number of trials, using max number")
+    trial_count <- max(trial_count)
+  }
 
   if(length(xlim_max) > 1){
     print('Error: multiple trial lengths in data included for combined plotting')

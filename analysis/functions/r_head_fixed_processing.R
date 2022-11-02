@@ -25,10 +25,12 @@ file_date <- function(x){
 #  note: if additional data types are added, add functions here and call them in extract_serial_output
 # extract unidimensional parameters
 extract_param <- function(x){
+
   param <- x %>%
     filter(id_type == 'param') %>%
     rename(value = event_ts) %>%
     select(-event_id) %>%
+    unique() %>%
     spread(event_id_char, value)
   
   param <- param %>% file_date()
@@ -90,6 +92,8 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
   #     or extract separately into different dir_processed and then combine with an additional step (better option)
   # file_format_output: either csv or feather
 
+  dir_raw <- dir_raw %>% format_dir()
+  dir_processed <- dir_processed %>% format_dir()
 
   # create list of all files within dir_list
   dir_list <- list.files(dir_raw, pattern="*.csv")
@@ -160,7 +164,7 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
     print(str_c('extracting file: ', blockname))
 
     loop_data <- suppressWarnings( # supress parsing warning
-      read_csv(str_c(dir_raw, '/', dir), col_names = c('event_id', 'event_ts'), col_types = cols()) %>%
+      read_csv(str_c(dir_raw, dir), col_names = c('event_id', 'event_ts'), col_types = cols()) %>%
         mutate(blockname)
     )
 
@@ -237,7 +241,7 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
   # process each individual file in dir_extracted and save in dir_processed
   #
   # inputs:
-  #  - dir_extraction (string): path to extracted datasets for each session ending with forward slash '/' (e.g. ./data/extracted/)
+  #  - dir_extraction (string): path to extracted datasets for each session ending with forward slash (e.g. ./data/extracted/)
   #  - dir_processed (string): output directory for processed datasets
   #  - log_data (dataframe): variables for the blockname, experiment, cohort, date used for assigning spout ids listed in log_multi_spout_ids
   #  - log_multi_spout_ids (df): variables for date, experiment, cohort, date, spout, and solution
@@ -247,6 +251,10 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
   #  - overwrite (logical): 0: only process data not yet processed, 1: overwrite existing datasets
   #  - time_bin_width (double): time in ms for the length of time bins used for data_trial_binned
   #  - time_bin_range (2 element vector, double): time window relative to trial onset for computing binned counts for data_trial_binned
+
+  # reformat each dir so it ends in /
+  dir_extraction <- dir_extraction %>% format_dir()
+  dir_processed <- dir_processed %>% format_dir()
 
   print("batch processing multi spout data...")
 
@@ -605,16 +613,9 @@ generate_trial_binned_counts <- function(data_trial, trial_ids, time_bin_width, 
   #  - time_bin_width: width of time bin (ms)
   #  - time_bin_range: 2 element vector with start and end of range (ms)
 
-  grouping_vars  <- c('blockname', 'trial_id')
-  var_trial      <- 'trial_num'
-  var_time_stamp <- 'event_ts_rel'
 
   # find files to analyze that are in both trial_ds and data_trial
-  files_to_process <- inner_join(
-    trial_ids   %>% select(blockname) %>% unique(),
-    data_trial  %>% select(blockname) %>% unique(),
-    by = 'blockname') %>%
-    pull(blockname)
+  files_to_process <- trial_ids  %>% select(blockname) %>% unique() %>% pull(blockname)
 
   # for each file, compute binned counts
   for (blockname_loop in files_to_process){
@@ -644,6 +645,19 @@ generate_trial_binned_counts <- function(data_trial, trial_ids, time_bin_width, 
     data_trial_binned_loop <- data_trial_binned_loop %>%
     mutate(time_bin_width = time_bin_width)
 
+    # generate empty dataframe if there are no licks for session
+    if(nrow(data_trial_binned_loop) == 0){
+      data_trial_binned_loop <- trial_ids %>%
+        select(blockname, trial_num) %>%
+        unique() %>%
+        mutate(time_bin = time_bin_range[1], count_binned = 0) %>%
+        complete(trial_num = 1:n_trials,
+                 time_bin = seq(time_bin_range[1], time_bin_range[2]-time_bin_width, time_bin_width),
+                 fill = list(count_binned = 0)) %>%
+        left_join(trial_ids_loop, by = c('blockname', 'trial_num')) %>%
+        fill(blockname, trial_start_ts, trial_id, trial_num_tastant)
+    }
+
     if(blockname_loop == files_to_process[1]){
       data_trial_binned <- data_trial_binned_loop
     } else {
@@ -651,7 +665,6 @@ generate_trial_binned_counts <- function(data_trial, trial_ids, time_bin_width, 
     }
   }
 
-  
   return(data_trial_binned)
 }
 
