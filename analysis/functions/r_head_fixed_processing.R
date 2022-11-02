@@ -163,21 +163,14 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
     print("--------------------------")
     print(str_c('extracting file: ', blockname))
 
-    loop_data <- suppressWarnings( # supress parsing warning
-      read_csv(str_c(dir_raw, dir), col_names = c('event_id', 'event_ts'), col_types = cols()) %>%
-        mutate(blockname)
-    )
+    loop_data <- read.csv(str_c(dir_raw, dir), header = FALSE) %>%
+      mutate(blockname) %>%
+      separate(V1, sep =" ", into = c('event_id', 'event_ts')) %>%
+      mutate(event_id = as.numeric(event_id),
+             event_ts = as.numeric(event_ts))
 
-    if(sum(!is.na(loop_data %>% pull(event_ts))) == 0){
-      loop_data <- loop_data %>%
-        select(-event_ts) %>%
-        separate(event_id, sep =" ", into = c('event_id', 'event_ts')) %>%
-        mutate(event_id = as.numeric(event_id),
-               event_ts = as.numeric(event_ts))
-    }
-
-  loop_data <- loop_data %>% select(blockname, event_id, event_ts) %>%
-    left_join(key_events, by = 'event_id')
+    loop_data <- loop_data %>% select(blockname, event_id, event_ts) %>%
+      left_join(key_events, by = 'event_id')
 
 
   loop_data_event         <- loop_data %>% extract_event()
@@ -300,8 +293,8 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
       data          <- read_feather(str_c(dir_extraction, fn, '_event.feather'))
       param_dynamic <- read_feather(str_c(dir_extraction, fn, '_param_dynamic.feather'))
     } else if(str_detect(file_format_output, 'csv')){
-      data          <- read_csv(str_c(dir_extraction, fn, '_event.csv'), col_types = cols())
-      param_dynamic <- read_csv(str_c(dir_extraction, fn, '_param_dynamic.csv'), col_types = cols())
+      data          <- read.csv(str_c(dir_extraction, fn, '_event.csv'))
+      param_dynamic <- read.csv(str_c(dir_extraction, fn, '_param_dynamic.csv'))
     } else {
       print('Error: incompatable file type (requires .feather or .csv)')
     }
