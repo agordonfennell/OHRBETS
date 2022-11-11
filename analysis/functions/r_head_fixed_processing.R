@@ -339,25 +339,155 @@ process_multi_spout <- function(dir_extraction, dir_processed, log_data, log_mul
     print(str_c('    ~ ', fn, '_data_session_binned_spout.', file_format_output))
 
     if(file_format_output == 'feather'){
-      data_trial           %>% write_feather(str_c(dir_processed, fn, '_data_trial.', file_format_output))
-      data_trial_summary   %>% write_feather(str_c(dir_processed, fn,  '_data_trial_summary.', file_format_output))
-      data_spout_summary   %>% write_feather(str_c(dir_processed, fn,  '_data_spout_summary.', file_format_output))
-      data_trial_binned    %>% write_feather(str_c(dir_processed, fn, '_data_trial_binned.', file_format_output))
-      data_session_binned_spout  %>% write_feather(str_c(dir_processed, fn, '_data_session_binned_spout.', file_format_output))
-      data_session_binned  %>% write_feather(str_c(dir_processed, fn, '_data_session_binned.', file_format_output))
+      data_trial           %>% write_feather(str_c(dir_processed, fn, '_data_trial.feather'))
+      data_trial_summary   %>% write_feather(str_c(dir_processed, fn,  '_data_trial_summary.feather'))
+      data_spout_summary   %>% write_feather(str_c(dir_processed, fn,  '_data_spout_summary.feather'))
+      data_trial_binned    %>% write_feather(str_c(dir_processed, fn, '_data_trial_binned.feather'))
+      data_session_binned_spout  %>% write_feather(str_c(dir_processed, fn, '_data_session_binned_spout.feather'))
+      data_session_binned  %>% write_feather(str_c(dir_processed, fn, '_data_session_binned.feather'))
     }
     if(file_format_output == 'csv'){
-      data_trial           %>% write_csv(str_c(dir_processed, fn, '_data_trial.', file_format_output))
-      data_trial_summary   %>% write_csv(str_c(dir_processed, fn,  '_data_trial_summary.', file_format_output))
-      data_spout_summary   %>% write_csv(str_c(dir_processed, fn,  '_data_spout_summary.', file_format_output))
-      data_trial_binned    %>% write_csv(str_c(dir_processed, fn, '_data_trial_binned.', file_format_output))
-      data_session_binned_spout  %>% write_csv(str_c(dir_processed, fn, '_data_session_binned_spout.', file_format_output))
-      data_session_binned  %>% write_csv(str_c(dir_processed, fn, '_data_session_binned.', file_format_output))
+      data_trial           %>% write_csv(str_c(dir_processed, fn, '_data_trial.csv'))
+      data_trial_summary   %>% write_csv(str_c(dir_processed, fn,  '_data_trial_summary.csv'))
+      data_spout_summary   %>% write_csv(str_c(dir_processed, fn,  '_data_spout_summary.csv'))
+      data_trial_binned    %>% write_csv(str_c(dir_processed, fn, '_data_trial_binned.csv'))
+      data_session_binned_spout  %>% write_csv(str_c(dir_processed, fn, '_data_session_binned_spout.csv'))
+      data_session_binned  %>% write_csv(str_c(dir_processed, fn, '_data_session_binned.csv'))
     }
 
   }
 }
 
+
+process_arduino_generic <- function(dir_extraction, dir_processed, log_data, key_events, file_format_output, manual_fns = NA, wheel_diameter = 63, overwrite = 0){
+  # process each individual file in dir_extracted and save in dir_processed
+  #
+  # inputs:
+  #  - dir_extraction (string): path to extracted datasets for each session ending with forward slash (e.g. ./data/extracted/)
+  #  - dir_processed (string): output directory for processed datasets
+  #  - log_data (dataframe): variables for the blockname, experiment, cohort, date used for assigning spout ids listed in log_multi_spout_ids
+  #  - log_multi_spout_ids (df): variables for date, experiment, cohort, date, spout, and solution
+  #  - file_format_output output file format ('csv' or 'feather')
+  #  - manual_fns (vector of strings): vector of file names to process, use NA to process all data in dir_extraction
+  #     ***note: use manual_fns or store data of different types in unique folders to prevent processing data with incorrect preprocessing pipeline
+  #  - overwrite (logical): 0: only process data not yet processed, 1: overwrite existing datasets
+  #  - time_bin_width (double): time in ms for the length of time bins used for data_trial_binned
+  #  - time_bin_range (2 element vector, double): time window relative to trial onset for computing binned counts for data_trial_binned
+
+  # reformat each dir so it ends in /
+  dir_extraction <- dir_extraction %>% format_dir()
+  dir_processed <- dir_processed %>% format_dir()
+
+  print("batch processing arduino data...")
+
+  # determine unique sessions  in dir_extracted
+  dir_extraction_fns <- list.files(dir_extraction)
+
+  dir_extraction_fns <- dir_extraction_fns[str_detect(dir_extraction_fns, '_event') & !str_detect(dir_extraction_fns, 'combined')] %>%
+    str_remove(str_c('_event.', file_format_output) )
+
+
+  # use manual_fns to filter to predetermined set
+  if(!is.vector(manual_fns)){
+    print("Aborted pre processing... manual_fns is not a vector")
+    return()
+  }
+
+  if(sum(!is.na(manual_fns)) > 0){
+    dir_extraction_fns <- dir_extraction_fns[dir_extraction_fns %in% manual_fns]
+  }
+
+
+  # determine files already in dir_processed and remove from dir_extraction_fns
+  dir_processed_fns <- list.files(dir_processed)
+
+  if(overwrite != 1){
+    for(dir_extraction_fn in dir_extraction_fns){
+      if(sum(str_detect(dir_processed_fns, dir_extraction_fn) > 0)){
+        dir_extraction_fns <- dir_extraction_fns[!str_detect(dir_extraction_fns, dir_extraction_fn)]
+      }
+    }
+  }
+
+  if(length(dir_extraction_fns) == 0){
+    print(str_c("all files in dir ", dir_extraction, ' are already processed and saved in dir ', dir_processed))
+    return()
+  }
+
+      # compute distances for rotation and ratios using data log
+  log_data <- log_data %>%
+    mutate(wheel_circumfrence = pi * wheel_diameter) %>%
+    mutate(resolution_rotation = 1 / (ppr / resolution)) %>%
+    mutate(rotation = resolution_rotation * wheel_circumfrence)
+
+  for(fn in dir_extraction_fns){ # for each file...
+
+    print(str_c("processing fn: ", fn))
+
+    # read in combined data
+    if(str_detect(file_format_output, 'feather')){
+      data          <- read_feather(str_c(dir_extraction, fn, '_event.feather'))
+    } else if(str_detect(file_format_output, 'csv')){
+      data          <- read.csv(str_c(dir_extraction, fn, '_event.csv'))
+    } else {
+      print('Error: incompatable file type (requires .feather or .csv)')
+    }
+
+    data <- data %>%
+      left_join(key_events) %>%
+      select(-id_type)
+
+    # join data log to data
+    data <- data %>%
+      mutate(date = ymd(date)) %>%
+      left_join(log_data)
+
+    # create cumulative event count
+    data_rotation <- data %>%
+      filter(event_id_char %in% c('active_rotation', 'inactive_rotation')) %>%
+      group_by(blockname, event_id, event_id_char) %>%
+      arrange(blockname, event_ts) %>%
+      mutate(count_cummulative = row_number()) %>%
+      mutate(rotation_relative      = cumsum(rotation),
+             rotation_relative_turn = cumsum(resolution_rotation)) %>%
+      mutate(rotation_absolute      = ifelse(event_id_char == 'inactive_rotation', -1 * rotation,            1 * rotation),
+             rotation_absolute_turn = ifelse(event_id_char == 'inactive_rotation', -1 * resolution_rotation, 1 * resolution_rotation)) %>%
+      group_by(blockname) %>%
+      mutate(rotation_absolute      = cumsum(rotation_absolute),
+             rotation_absolute_turn = cumsum(rotation_absolute_turn)
+             ) %>%
+      ungroup()
+
+    # create summary
+    data_summary <- data %>%
+      group_by(blockname, event_id_char, rotation, resolution_rotation) %>%
+      summarise(event_count = n()) %>%
+      mutate(rotation      = ifelse(event_id_char %in% c('active_rotation', 'inactive_rotation'), event_count * rotation, NA)) %>%
+      mutate(rotation_turn = ifelse(event_id_char %in% c('active_rotation', 'inactive_rotation'), event_count * resolution_rotation,NA)) %>%
+      select(-resolution_rotation) %>%
+      ungroup()
+
+    # save outputs
+    if(str_detect(file_format_output, 'feather')){
+      data          %>% write_feather(str_c(dir_processed, fn, '_data_event.feather'))
+      if(nrow(data_rotation) > 0){
+        data_rotation %>% write_feather(str_c(dir_processed,  fn, '_data_rotation.feather'))
+      }
+      data_summary  %>% write_feather(str_c(dir_processed, fn, '_data_summary.feather'))
+
+    } else if(str_detect(file_format_output, 'csv')){
+
+      data          %>% write_csv(str_c(dir_processed, fn, '_data_event.csv'))
+      if(nrow(data_rotation) > 0){
+      data_rotation %>% write_csv(str_c(dir_processed, fn, '_data_rotation.csv'))
+      }
+      data_summary  %>% write_csv(str_c(dir_processed, fn, '_data_summary.csv'))
+    } else {
+      print('Error: incompatable file type (requires .feather or .csv)')
+    }
+
+  }
+}
 # Processing execution -------------------------------------------------------------------------------------------------
 process_arduino <- function(data, key_events, log_data, dir_processed, file_format_output, wheel_diameter = 63){
   # data: output    from combine_extracted_serial_output()
@@ -369,8 +499,6 @@ process_arduino <- function(data, key_events, log_data, dir_processed, file_form
   # dir_processed:  folder location that extract_serial_output() exported extracted files to
   # wheel_diameter: diameter of operant wheel (63 for standard design)
 
-
-  
   # join event key to data
   data <- data %>%
     left_join(key_events) %>%
@@ -569,7 +697,7 @@ create_solution_value <- function(df){
 }
 
 # Trial functions -----------------------------------------------------------------------------------------------------
-# these functions might belong in a more general R function repository
+# note to self: these functions might belong in a more general R function repository
 generate_trial_events <- function(data, trial_ids, trial_start_id, events_of_interest){
   # uses data and trial_ids to determine the trial info for each event defined by events_of_interest
   # * trial_start_id defines the event_id_char value that denotes the start of a trial, must match the one
