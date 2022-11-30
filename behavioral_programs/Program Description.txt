@@ -9,13 +9,16 @@ Programs:
 
 - Real-time place testing
 
-- Multi-spout, brief access
+- Multi-spout, fixed-choice, brief-access
 
 - Multi-spout, free-choice
 
+
 Scripts:
 
-- Trial generator
+- generate_trials.py
+   - generates string of trial ids for multi-spout, fixed-choice, brief-access
 
-- read_serial 
+- read_serial.py
+   - issues start command to arduino and records serial to a .csv file
 

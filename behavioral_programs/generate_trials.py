@@ -5,16 +5,13 @@ import random
 from time import localtime, strftime
 
 # parameters
-trial_types =  [0,1,2,100,101,102]   # integers for different types of trials
-trial_counts = [1,1,1,1,1,1]  # number of each trial type
-session_splits = 11
-
-
-possible_repeats = 10  # number of repeats allowed in final list
+trial_types =  [0,1,2,3,4]   # integers for different types of trials
+trial_counts = [2,2,2,2,2]  # number of each trial type
+session_splits = 10
 
 n_sessions = 1
 
-save_csv = True
+save_csv = False
 
 
 session_vector_output = []
@@ -34,21 +31,7 @@ for n_session in np.arange(n_sessions):
 
         repeat_criteria = 1
 
-        while repeat_criteria:            # while repeat critiera is not met
-            random.shuffle(trial_vector)  # shuffle vector
-
-            for n_repeat in np.arange(possible_repeats):
-                if(n_repeat == 0):
-                    repeat_vector = trial_vector == np.roll(trial_vector, 1)
-                else:
-                    repeat_vector = repeat_vector * (trial_vector == np.roll(trial_vector, 1 + n_repeat))
-
-            if sum(repeat_vector) == 0:
-                repeat_criteria = 0
-
-            if possible_repeats >= max(trial_counts):
-            	repeat_criteria = 0
-
+        random.shuffle(trial_vector)  # shuffle split vector
 
         trial_vector_output = np.append(trial_vector_output,trial_vector)
 
