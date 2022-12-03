@@ -41,7 +41,6 @@ Instructions (see protocol_helper_opensol for step by step instructions):
   byte switch_sol_id;
   byte switch_sol_id_serial;
   byte lick_last;
-  byte serial_state = 0;
   boolean serial_toggle = 0;
   unsigned long baud = 115200;
 
@@ -94,7 +93,6 @@ void setup() { //---------------------------------------------------------------
     delay(250);
     servo_retract.detach();
   
-    
    // break
     servo_break.attach(pinServo_break);
     servo_break.write(servo_break_engaged_deg);
@@ -131,15 +129,13 @@ void loop() { //----------------------------------------------------------------
  // open mode 0 (touch spout to open sol)***********************
   // set servo_radial_deg using serial input
    if(Serial.available() && open_mode == 0){
-      if(serial_state == 0){
-        int servo_radial_deg = Serial.parseInt();
-        if(servo_radial_deg > 0){
-          Serial.print("Current Deg: "); Serial.println(servo_radial_deg);
-          servo_radial.attach(pinServo_radial);
-          servo_radial.write(servo_radial_deg);
-          delay(500);
-          servo_radial.detach();
-        }
+      int servo_radial_deg = Serial.parseInt();
+      if(servo_radial_deg > 0){
+        Serial.print("Current Deg: "); Serial.println(servo_radial_deg);
+        servo_radial.attach(pinServo_radial);
+        servo_radial.write(servo_radial_deg);
+        delay(500);
+        servo_radial.detach();
       }
    }
   // touch spout to open sol
