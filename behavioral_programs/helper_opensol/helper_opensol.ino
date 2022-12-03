@@ -2,9 +2,9 @@
 Description:
   program allows user to rotate multi-spout head and open individual solenoids for setup or cleanup using one of two modes
 
-  currently setup for 5 solenoids. Works with less solenoids, adjust pinSol and stateSol to work with more
+  currently setup for 5 solenoids. Works with less solenoids, adjust pinSol, sol_count, and stateSol to work with more
 
-Instructions:
+Instructions (see protocol_helper_opensol for step by step instructions):
 - set open_mode and servo_radial_deg, and send to arduino
 - open serial monitor
 - mode 0:
@@ -27,55 +27,87 @@ Instructions:
  // parameters ************************************************************************************************
   boolean open_mode = 1; // 0: touch to open set radial w/ serial, 1: serial to open
   byte servo_radial_deg = 120; // starting multi-spout angle (mode 0); fixed multi-spout angle (mode 1)
-  
-  
+  int sol_count = 5; // number of sol (must match length of pinSol & stateSol)
  // ***********************************************************************************************************
  
  // Pins
   static byte pinSol[]   = {4,5,6,8,9}; // one pin per solenoid
-  static byte pinServo_retract = 9;
+  static byte pinServo_retract = 9; 
   static byte pinServo_break = 10;
   static byte pinServo_radial = 11;
 
  // variables
   boolean stateSol[] = {0,0,0,0,0}; // one state per sol
-  byte lick;
-  byte serial_lick;
+  byte switch_sol_id;
+  byte switch_sol_id_serial;
   byte lick_last;
-  uint16_t lasttouched = 0;
-  uint16_t currtouched = 0;
   byte serial_state = 0;
   boolean serial_toggle = 0;
+  unsigned long baud = 115200;
 
  // servos 
-  Servo servo_radial;
+   // servo retractable spout variables / parameters ------------------------------------------
+    Servo servo_retract;
+    static byte servo_retract_retracted_deg = 120;
+    
+  
+   // servo break variables / parameters ------------------------------------------------------
+    Servo servo_break;  // create servo object to control a servo
+    static byte servo_break_engaged_deg = 13;
+  
+   // servo radial  ---------------------------------------------------------------------------
+    Servo servo_radial;
+
   
  // capsensor
   Adafruit_MPR121 cap = Adafruit_MPR121();
+  uint16_t lasttouched = 0;
+  uint16_t currtouched = 0;
 
 void setup() { //--------------------------------------------------------------------------------------------------
-  // put your setup code here, to run once:
+  Serial.begin(baud); // start serial
+  Serial.println("Serial Begin");
+
   
-Serial.begin(115200);
+ // set inputs / outputs
+  for(uint8_t i = 0; i<=sol_count-1; i++){
+    pinMode(pinSol[i], OUTPUT);
+  }
+  
+  pinMode(pinServo_retract, OUTPUT);
+  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_radial, OUTPUT);  
+  
 
-for(uint8_t i = 0; i<=4; i++){
-  pinMode(pinSol[i], OUTPUT);
-}
-
-pinMode(pinServo_retract, OUTPUT);
-pinMode(pinServo_break, OUTPUT);  
-
+ // check for cap sensor
   if (!cap.begin(0x5A)) {
     Serial.println("MPR121 not found, check wiring?");
     while (1);
   }
+  
   Serial.println("MPR121 found!");
 
-  servo_radial.attach(pinServo_radial);
-  servo_radial.write(servo_radial_deg);
-  delay(1000);
-  servo_radial.detach();
+ // attach and move servos
+   // retract
+    servo_retract.attach(pinServo_retract);
+    servo_retract.write(servo_retract_retracted_deg);
+    delay(250);
+    servo_retract.detach();
+  
+    
+   // break
+    servo_break.attach(pinServo_break);
+    servo_break.write(servo_break_engaged_deg);
+    delay(250);
+    servo_break.detach();
 
+   // radial
+    servo_radial.attach(pinServo_radial);
+    servo_radial.write(servo_radial_deg);
+    delay(250);
+    servo_radial.detach();
+
+ // print prompt based on mode
   if(open_mode == 0){
     Serial.println("Send Serial to Update Radial Deg (0-180)");
   }
@@ -86,14 +118,18 @@ pinMode(pinServo_break, OUTPUT);
 }
 
 void loop() { //--------------------------------------------------------------------------------------------------
+  // open mode 1 (serial to open sol)***********************
    if(Serial.available() && open_mode == 1){
-    serial_lick = Serial.parseInt();
+    switch_sol_id_serial = Serial.parseInt(); // read serial
     
-      if(serial_lick > 0 && serial_lick <= 5){
-        lick = serial_lick;
+      if(switch_sol_id_serial > 0 && switch_sol_id_serial <= sol_count){ // if input is within range of the number of sol
+        switch_sol_id = switch_sol_id_serial; // flag sol number for state switch
       }
    }
-   
+
+
+ // open mode 0 (touch spout to open sol)***********************
+  // set servo_radial_deg using serial input
    if(Serial.available() && open_mode == 0){
       if(serial_state == 0){
         int servo_radial_deg = Serial.parseInt();
@@ -106,34 +142,33 @@ void loop() { //----------------------------------------------------------------
         }
       }
    }
-
-  
-  //deliver reward if enough licks have been registered
-    currtouched = cap.touched();
-
-  // check to see if touch onset occured
-  for (uint8_t i = 1; i <= 5; i++) { // for each sensor (change the maximum i if more touch sensors are added)
-    if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) ) { // if touched now but not previously
-      if(open_mode == 0){
-        lick = i;                                               // flag lick
+  // touch spout to open sol
+    if(open_mode == 0){
+      currtouched = cap.touched();
+      for (uint8_t i = 1; i <= sol_count; i++) { // for each sensor (change the maximum i if more touch sensors are added)
+        if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) ) { // if touched now but not previously
+          switch_sol_id = i; // flag touch
+        }
       }
+      lasttouched = currtouched;
     }
-  }
 
-  if(lick>0){
-    stateSol[lick-1] = !stateSol[lick-1];
-    digitalWrite(pinSol[lick-1],stateSol[lick-1]);
+ // general function to open sol *******************************
+  if(switch_sol_id>0){ // flag from touch or serial
+   // invert state for sol defined by flag
+    stateSol[switch_sol_id-1] = !stateSol[switch_sol_id-1]; 
+    digitalWrite(pinSol[switch_sol_id-1],stateSol[switch_sol_id-1]);
 
-     Serial.print("Pin States: ");
+   // print state of sols
+    Serial.print("Pin States: ");
+    
     for(uint8_t i = 0; i<=4; i++){
       Serial.print(stateSol[i]);
     }
+    
     Serial.println();
     
-    lick = 0; // reset lick flag to close if statement
-    
+    switch_sol_id = 0; // reset switch_sol_id flag to close if statement
   }
   
-  // save current state for comparision with next state
-  lasttouched = currtouched;
 }
