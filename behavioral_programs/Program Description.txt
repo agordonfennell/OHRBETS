@@ -1,17 +1,29 @@
 
-Programs:
+Behavioral Programs:
+ ~these programs are used to conduct behavioral experiments. 
+  we have included all of the behavioral experiments presented in 
+  Gordon-Fennell et al. 2023, and additional behavioral programs for 
+  insperation
 
-- Operant conditioning
+ - Operant conditioning
    - options
-      * fixed-ratio
-      * fixed-ratio, incremental
-      * progressive-ratio
+     * fixed-ratio
+     * fixed-ratio, incremental
+     * progressive-ratio
 
-- Real-time place testing
+ - Real-time place testing
 
-- Multi-spout, fixed-choice, brief-access
+ - Multi-spout, fixed-choice, brief-access
 
-- Multi-spout, free-choice
+ - Multi-spout, free-choice
+
+Helper Programs:
+ ~these programs are used to assist with setting up for behavioral
+  experiments
+
+ - ard_helper_opensol
+   ~this program is used to manually open solenoids for each spout
+    using a touch on the spout or a serial input   
 
 
 Scripts:
