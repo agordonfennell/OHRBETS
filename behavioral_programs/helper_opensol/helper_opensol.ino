@@ -31,7 +31,7 @@ Instructions (see protocol_helper_opensol for step by step instructions):
  // ***********************************************************************************************************
  
  // Pins
-  static byte pinSol[]   = {4,5,6,8,9}; // one pin per solenoid
+  static byte pinSol[]   = {4,5,6,7,8}; // one pin per solenoid
   static byte pinServo_retract = 9; 
   static byte pinServo_break = 10;
   static byte pinServo_radial = 11;
@@ -158,7 +158,7 @@ void loop() { //----------------------------------------------------------------
    // print state of sols
     Serial.print("Pin States: ");
     
-    for(uint8_t i = 0; i<=4; i++){
+    for(uint8_t i = 0; i<=sol_count-1; i++){
       Serial.print(stateSol[i]);
     }
     

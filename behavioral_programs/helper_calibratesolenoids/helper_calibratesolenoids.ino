@@ -87,7 +87,8 @@ void loop() {
       
       Serial.print("sol pin: "); Serial.println(pinSol);
       Serial.print("duration of sol openings: "); Serial.println(sol_duration_current);
-      Serial.print("number of solenoid openings: "); Serial.println(num_sol);
+      Serial.print("inter sol interval: "); Serial.println(isi);
+      Serial.print("number of sol openings: "); Serial.println(num_sol);
       Serial.print("target vol(µL): "); Serial.println(num_sol * 1.5);
       Serial.println("");
 

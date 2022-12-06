@@ -32,7 +32,6 @@ static int tone_freq = 5000;
 static byte num_spouts = 5; // todo: change to formula?
 static byte pinSol[]       = { 4, 5,  6,  8,  9};
 static byte sol_duration[] = {28, 34, 22,  38, 11}; //{28, 13, 18, 16, 42};
-//static byte pinLickometer_ttl[] = {24, 26, 28, 30, 32}; // single box 
 static byte pinLickometer_ttl[] = {24, 24, 24, 24, 24}; // dual box
 static byte servo_radial_degs[] = {9, 36, 64, 92, 123};
 static byte servo_retract_extended_degs[] = {175, 169, 168, 168, 169};
@@ -136,6 +135,23 @@ void setup() {
   Serial.begin(115200);
   randomSeed(analogRead(0));
 
+  // define inputs --------------------------------
+  pinMode(pinLickometer, INPUT);
+
+  // define outputs
+  pinMode(pinSpeaker, OUTPUT);
+  pinMode(pinSol_ttl, OUTPUT);
+  pinMode(pinTrial_ttl, OUTPUT);
+  pinMode(pinServo_retract, OUTPUT);
+  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_radial, OUTPUT); 
+  
+  
+  for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++) { // for each solenoid
+    pinMode(pinSol[i_sol], OUTPUT);                       // define sol as output
+    pinMode(pinLickometer_ttl[i_sol], OUTPUT);           // 
+  } 
+
   // engage servo break prior to session start
   servo_break.attach(pinServo_break);
   Serial.print(11); Serial.print(" "); Serial.println(ts);
@@ -157,23 +173,8 @@ void setup() {
   servo_retract.write(servo_retract_extended_degs[current_spout]);
   delay(500);
   servo_retract.detach();
-
-  // define inputs --------------------------------
-  pinMode(pinLickometer, INPUT);
-
-  // define outputs
-  pinMode(pinSpeaker, OUTPUT);
-
-  pinMode(pinSol_ttl, OUTPUT);
-
-  pinMode(pinTrial_ttl, OUTPUT);
   
-  
-  for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++) { // for each solenoid
-    pinMode(pinSol[i_sol], OUTPUT);                       // define sol as output
-    pinMode(pinLickometer_ttl[i_sol], OUTPUT);           // 
-  }
-
+  // prime spouts
   if(num_prime > 0){
     for (uint8_t i_prime = 0; i_prime < num_prime; i_prime++){
       for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++){
@@ -194,7 +195,7 @@ void setup() {
   
   cap.setThresholds(6, 1);
   delay(50);
-  Serial.print(999);   Serial.print(" "); Serial.println(cap.filteredData(1));
+  Serial.print(998);   Serial.print(" "); Serial.println(cap.filteredData(1));
 
   // wait for serial command before initating session---------------------------------------------------------------------
   if (session_serial_initiate) {
@@ -244,7 +245,7 @@ void loop() {
 
   // close solenoids---------------------------
   if (ts >= ts_sol_offset && ts_sol_offset != 0) {           // if time is after solenoid offset time
-    for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++) { // for each sensor (change the maximum i if more touch sensors are added)
+    for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++) { // for each sol
       digitalWrite(pinSol[i_sol], LOW);
 
       if (i_sol == num_spouts - 1) {
