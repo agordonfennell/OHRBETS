@@ -76,15 +76,8 @@ event_key,event_id,event_id_char,id_type
 1,2,trial_start,event
 1,1,start_session,event
 1,0,end_session,event
-1,23,rod_onset,event
-1,24,rod_offset,event
-1,131,rod_duration,param
-1,132,num_rod,param
-1,133,inter_rod_time,param
 1,149,rotation_position,event
-1,135,rod_max,param
-1,221,tone_freq_cs_plus,param
-1,220,tone_freq_cs_minus,param
 1,222,trial_cs,param_dynamic
-,,,
+1,137,session_tone,param
 1,998,resting_cap,param
+1,138,tone_to_access_delay,param
