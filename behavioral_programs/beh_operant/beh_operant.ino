@@ -27,143 +27,17 @@
   * additional sensors can be added
 
 -Dependencies---------------------------
-This program uses multiple dependencies
+This program uses multiple dependencies (see protocol: for instructions on installation)
 * Servo.h: library used to control micro servos used for break / retractable spout 
 * Wire.h: library used for capacitive touch sensor
 * Adafuit_MPR121.h: library used for capacitive touch sensor
-  - NOTE: this library must be downloaded through the arduino library ("Tools">"Manage Libraries..."> search for MPR1221)
-  - ***some versions of arduino do not include additional dependencies that Adafuit_MPR121.h relies on*** 
-  - if you run into problems, uninstall arduino and install it thorugh the microsoft store (this has fixed this exact problem
-    multiple times)
+
+-Data structure-------------------------
+* see general arduino program approach for a description of how events and parameters are recorded
 
 -Running the program--------------------------
-* Set your parametrs within the program and then upload to your arduino board (make sure the correct COM port / 
-  Board /Processor is selected under Tools)
-  * break will engage and spout will extend (check to ensure this occured)
-* The arduino program will wait for a serial command from python before it begins
-* Initiate the arduino program by runing a computer program that sends a serial command to the arduino
-  * make sure that correct comport and baudrate are selected
-* All events that occur during the arduino program are transmitted via serial with an id and time stamp in ms 
-* At the end of the session, the break will be engaged and spout will be retracted
-* In between subjects, restart the arduino by resetting USB connection or reuploading the program. 
+* follow protocol for behavior script
 
-*** critical note *****************************
-* currently, all parameters must be set in this arduino program
-* Once the prgoram has been tested and polished, the ability to send parameters via serial will be added
-* Save your parameters somewhere so they can be used to interpret your data
-
--Programing notes------------------------------
-* Interupts are necessary to record rotation pulses from the rotary encoder (digitalRead/Write are to slow and miss rotation)
-* Variables within interupts should be set as volatile, as their values will be changing rapidly and should always be in memory.
-* You must use a fast serial Baud rate to avoid data lost from the rotary encoder (115200 is sufficient)
-
--Version notes---------------------------------
-v01 adapted from fr_rotary_encoder_v13
-
-v02
-- added ability to run without break using variable session_break (0: no break, 1: break)
-  - always breaks before session and at session end
-  - with no break, rotation during the access period is recorded but does not count twoards the next reward
-- added ability to run without spout retracting using variable session_retract(0: no retraction, 1 retraction)
-  - always retracts at end of session
-- added ability to run without serial input using variable session_serial_initiate(0: start without serial, 1: wait for serial input)
-- added session contingency with variable session_contingency_current(0: right = active, 1: left = active)
-- added in laser on/off for reinforcer
-- added option for breaked timeout period beyond access/laser period
-- added in progressive ratio
-- added in print out at start of session with all parameters
-- added in ability to change contingency during session 
-- added in ability to remove reinforcer during session
-  - rotation during non reinforced periods are recorded as to rotations 
-
-v03
-- changed pr formula
-  - pr_function now sets the multiplier
-      -  1: linear
-      - >1: logorithmic 
-  - fixed problem with break not disengaging at start of session
-  - added progressive ratio timeout timer. Each reinforcer resets the timer to current time + pr_timeout. If no reinforcer is reached
-    before the timer is reached, then the session is ended
-  - added serial print for session end type (98: pr time out, 99: session duration time out)
-
-v04
-- added setback option to prevent subtraction in opposite direction (session_setback; 0: no setback, 1: setback to zero, 2: setback to negative)
-  
--Todo------------------------------------------
-- add in additional optional delay from tone to spout
-  - remove subtract opposite direction
-
-- include opto manipulations during different stages of the task 
-  - open-loop with a set stim_tm_step
-  - closed-loop during access period
-  - closed-loop after access period.  
-  
-- clean up active / inactive / right / left code? 
-  - currently downsampled rotation is recorded as active / inactive, but it may benifit us to record left / right instead
-  - of two minds, doesn't really matter so long as we are tracking the contingency and we are careful to analyze correctly
-
-long term todo...
-- add parameters via serial?
-- setup website with scripts / hardware list
-
-- write out description of rotary encoder code
-- write up description of trial control timing code
-
--serial event ids------------------------------
----parameters---
-- 100 session_duration
-- 101 rotary_resolution
-- 103 session_break
-- 104 session_retract
-- 105 session_serial_initiate
-- 126 session_setback
-
-- 107 session_reinforcer
-- 108 laser_posneg
-- 109 schedule
-- 110 pr_step
-- 111 pr_function
-- 112 break_sol_delay
-- 113 min_delay
-- 114 max_delay
-- 115 access_time
-- 116 sol_duration
-- 117 num_sol
-- 118 inter_sol_time
-- 119 laser_duration
-- 120 duration_additional_to
-- 121 tone_freq
-- 122 tone_duration
-
-- 124 tm_switch_contingency_step
-- 125 tm_switch_reinforcer_availability_step
-
----dynamic parameters--- 
-[[2 line method: first row shows ts in 2nd column second row shows current value in 2nd colum]]
- 
-- 102 current_ratio
-- 106 session_contingency_current 
-- 123 session_reinforcer_availability
-
----events---
-- 1   start_session
-- 14  sol_offset
-- 16  laser_onset
-- 17  laser_offset
-- 81  active_rotation
-- 82  active_rotation_critiera
-- 71  inactive_rotation
-- 72  inactive_rotation_critiera
-- 31  lick
-- 11  break_engaged
-- 12  break_disengaged
-- 13  spout_extended
-- 15  spout_retracted
-- 83  active_rotation_to
-- 73  inactive_rotation_to 
-- 0   end_session
-- 99  session duration time out
-- 98  progressive ratio time out 
 */
 
 // dependencies

@@ -1,8 +1,13 @@
 /*
 -General notes--------------------------
-* This program is a spout training task, where each lick triggers a solenoid opdning
+* This program is a retractable spout trianing & pavlovian conditioning task
 * break is engaged, spout is extended, and multi-spout head is rotated at start of session
-* spout is retracted at end of session
+* set number of trials consisting of
+  - tone (optional)
+  - spout extension for set period of time then retraction (optional)
+  - delivery of a defined number of solenoid openings
+  - random inter-trial-interval
+  - relative timing between tone and spout extension / liquid delivery set using tone_to_access_delay
 * setup to accomidate setups with multiple spouts
   ~ see section spout / sol pins & parameters, fill out 1 element per spout on system
 
