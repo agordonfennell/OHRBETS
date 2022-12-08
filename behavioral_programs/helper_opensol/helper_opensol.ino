@@ -25,7 +25,7 @@ Instructions (see protocol_helper_opensol for step by step instructions):
   #include <Servo.h>
 
  // parameters ************************************************************************************************
-  boolean open_mode = 1; // 0: touch to open set radial w/ serial, 1: serial to open
+  boolean open_mode = 0; // 0: touch to open set radial w/ serial, 1: serial to open
   byte servo_radial_deg = 120; // starting multi-spout angle (mode 0); fixed multi-spout angle (mode 1)
   int sol_count = 5; // number of sol (must match length of pinSol & stateSol)
  // ***********************************************************************************************************

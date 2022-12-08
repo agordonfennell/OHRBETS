@@ -2,29 +2,19 @@
 -General notes--------------------------
 * This program is an operant task with multiple schedule and reinforcement options
 * The ratio or reinforcement can be either fixed or progressive
-* The reinforcer can be either liquid reward (1 or more solenoid openings) or laser stimulation (on or off)
+* The reinforcer can be either liquid reward (1 or more solenoid openings) or extTTL stimulation (on or off)
 * This program includes an optional break control to limit the subjects ability to make operant responses
 * This program includes an optional retractable spout to limit the subjects ability to make consumitory responses
-* Solenoid onset starts with spout extension
+* Solenoid sequence onset starts with spout extension
 * access period and solenoid  opening are independent
   * check to ensure that the access period is longer than (sol_duration + inter_sol_time) x num_sol
+* tone and access periods are on independent timing
 * All events (except dynamic parameters) that occur during the arduino program are transmitted via serial with an id and time stamp in ms (2 columns)
   * If you adapt this program and add new events, make sure to follow the 2 column approach to avoid conflicts with
     existing programs
   * Dynamic parameters are represented by 2 rows, the first row is the time stamp for the parameter, and the second is the current parameter
     the column will always contain the id for the dynamic parameter
     - it is critical that the order is maintaied
--Hardware------------------------------
-* For a list of hardware see url ....
-* This code was writen specifically for the following hardware
-  * Micro servo: Tower Pro SG92R
-    * other servos have not been tested. If you are using another servo make sure that they don't move when detatched 
-  * Capacitive touch: Adafruit 12-Key Capacitive Touch Sensor Breakout MPR121 
-  * Solenoid: Parker Series 3 003-0257-900
-    * The solenoid duration may need to be calibrated for each solenoid based on multiple factors (height of 
-      resivoir, tubing length, etc.)
-* program is using sensor 1 for the Adafuit Capactitive touch sensor
-  * additional sensors can be added
 
 -Dependencies---------------------------
 This program uses multiple dependencies (see protocol: for instructions on installation)
@@ -38,6 +28,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 -Running the program--------------------------
 * follow protocol for behavior script
 
+
 */
 
 // dependencies
@@ -47,16 +38,31 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 
 // session parameters *************************************************************************************************************
  // general parameters -------
-  static unsigned long session_duration = 1800000; // session duration (ms) (note: avoid using formula here, sometimes it leads to errors)
+  static unsigned long session_duration = 1800000; // session duration (ms) (note: avoid using formula here)
   static boolean session_break = 1;            // 0: no break during access period, 1: break engaged during access period
-  static boolean inactive_break = 1;
+  static boolean inactive_break = 1;           //  0: no break following inactive response, 1: break for equivalent time to active response
   static boolean session_retract = 1;          // 0: no retractable spout, 1: retractable spout
-  static boolean session_serial_initiate = 1;  // 0: starts without serial input, 1: waits for serial input before starting
   boolean session_contingency_current = 0;     // 0: right = active, 1: left = active
   boolean session_reinforcer_availability = 0; // 0: availible, 1: not availible
-  static boolean session_reinforcer = 0;       // 0: liquid, 1: laser
-  static boolean session_setback = 1;          // 1: no setback, 1: setback to zero, 2: setback to negative
-  static boolean laser_posneg = 0;             // 0: pos reinforcement, 1: neg reinforcement
+  static boolean session_reinforcer = 0;       // 0: liquid, 1: ttl out (laser, or other external hardware)
+  static boolean session_setback = 1;          // 0: no setback, 1: setback to zero, 2: setback to negative
+  static boolean extTTL_posneg = 0;             // 0: pos reinforcement (resp->on), 1: neg reinforcement (resp->off)
+
+ // spout vectors (each element will correspond to a spout, add or remove elements based on system, default is setup for 5 spouts)
+  static byte num_spouts = 5; // should have this many values for each of the following vectors
+  
+  static byte pinSol[] =                      {  4,  5,  6,  7,  8};
+  static byte sol_duration[] =                { 30, 30, 30, 30, 30}; // calibrate to ~1.5µL / delivery
+  static byte servo_radial_degs [] =          {  0, 30, 60, 90,120};
+  static byte servo_retract_extended_degs[] = {180,180,180,180,180};
+  static byte pinLickometer_ttl[] =           { 22, 22, 22, 22, 22};
+
+  byte current_spout = 1; // set spout for session (1 to n, where n is the nubmer of spouts on the system; used to index each vector above)
+
+ // external TTL vecotrs (each element will correspond to a TTL output, see format above)
+  static byte num_extTTL = 3;
+  static byte pinExtTTL[] = {26, 27, 28, 29};
+  static byte current_extTTL = 1; //  set TTL for session
 
 // switch parameters ---------
   static long tm_switch_contingency_step = -1;             // switch contingency every x ms (-1: no switching)
@@ -65,54 +71,50 @@ This program uses multiple dependencies (see protocol: for instructions on insta
  // rotation & schedule ------
   static int rotary_resoltion = 32; // number of rotation pulses per down sampled rotation pulse(raw PPR = 1024, rotary resolution of 16 -> 64 down sampled pulses per rotation (1024 / 16 = 64))
   static boolean schedule = 0;      // 0: fixed ratio, 1: progressive ratio
-  int current_ratio = 8;           // number of down sampled rotation pulses per reward (absolute rotation will depend on both current_ratio and rotary_resolution, e.g. rotary resolution of 16(64 down sampled pulses per rotaiton), and a current_ratio of 32 means 1/2 rotation per reward)
-  
+  int current_ratio = 8;            // number of down sampled rotation pulses per reward (absolute rotation will depend on both current_ratio and rotary_resolution, e.g. rotary resolution of 16(64 down sampled pulses per rotaiton), and a current_ratio of 32 means 1/2 rotation per reward)
   
   static int pr_step = 8;                   // step in number of down sampled rotation pusles per reward
-  static double pr_function = 1.25;         // 1: linear, >1: logorithmic (1.25 aproximates Richardson and Roberts (1996)  [5e(R*0.2)] - 5 )
+  static double pr_function = 1.25;         // 1: linear increase, >1: logorithmic (1.25 aproximates Richardson and Roberts (1996)  [5e(R*0.2)] - 5 )
   static unsigned long pr_timeout = 600000; // amount of time wihtout a response before session ends (ms)
 
  // pre access delay ---------
-  static unsigned long break_sol_delay = 500;   // minimum delay from break onset to access period start (allows for break to fully engage)
-  static unsigned long min_delay = 0;           // minimum delay after break engages before access period start
-  static unsigned long max_delay = 0;           // maximum delay after break engages before access period start
+  static unsigned long break_delay = 250;         // minimum delay from break onset to access period start (allows for break to fully engage)
   
+  static unsigned long break_to_access_delay_min = 3000; // minimum delay after break engages before access period start
+  static unsigned long break_to_access_delay_max = 3000; // maximum delay after break engages before access period start
+ 
  // access & solenoid --------
-  static int access_time = 3000;          // total time before spout is retracted
-  
-  static byte sol_duration = 40;          // duraiton solenoid is open during delivery
+  static int access_time = 3000;          // total time before spout is extended
   static byte num_sol = 5;                // number of solenoid opening access period
-  static int inter_sol_time = 140;        // interval between each solenoid opening (measured from end of previous until start of next)
-
+  int inter_sol_time = 180 - sol_duration[current_spout-1];        // interval between each solenoid opening (measured from end of previous until start of next)
+  
  // opto --------------------
-  static int laser_duration = 2000;
+  static int extTTL_duration = 2000; // duration of ttl high (pos) or ttl low (neg)
 
  // additional time out -----
-  static int duration_additional_to = 0; // time out period (ms) that extends beyond access/opto period
+  static int duration_additional_to = 3000; // time out period (ms) that extends beyond access/opto period
  
  // tone cue -----------------
-  static unsigned long tone_freq = 5000;  // tone played during access period / laser stim period (Hz)
-  static int tone_duration = access_time; // tone duration (starts with begining of access time)
+  static unsigned long tone_freq = 5000;  // tone played during access period / extTTL period (Hz)
+  static int tone_duration = 2000;        // tone duration (ms)
+  
+  static unsigned long break_to_tone_delay_min = 0;   // minimum delay after break engages before tone start
+  static unsigned long break_to_tone_delay_max = 0;   // maximum delay after break engages before tone start
   
 
 // arduino pins ----------------------------------------------------------------------------
  // inputs ----------------------------
-  static byte pinLickometer = 6;   
   static byte pinRotaryEncoderA = 3; 
   static byte pinRotaryEncoderB = 2; 
   
  // outputs ---------------------------
-  static byte pinServo_break = 38;
-  static byte pinServo_retract = 36;
-  static byte pinSol = 7; 
-  static byte pinLaser = 47;
+  static byte pinServo_retract = 9; 
+  static byte pinServo_break = 10;
+  static byte pinServo_radial = 11;
   static byte pinSpeaker = 12;
-  static byte pinImageStart = 41;     
-  static byte pinImageStop = 42;  
 
   // ttls for external time stamps
   static byte pinSol_ttl = 52;
-  static byte pinLickometer_ttl = 46;
   static byte pinRotation_active_ttl = 50;
   static byte pinRotation_inactive_ttl = 48;
 
@@ -131,13 +133,14 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 
 // servo retractable spout variables / parameters ------------------------------------------
   Servo servo_retract;
-  static byte servo_retract_extended_deg = 180;
   static byte servo_retract_retracted_deg = 120;
   unsigned long detach_servo_retract_ts = 0;
   static int detach_servo_retract_step = 100; // time in ms to allow for the servo to travel
   unsigned long ts_servo_retract_retracted;
 
-
+// servo radial varialbe / parameters-------------------------------------------------------
+  Servo servo_radial;
+  
 // rotary encoder variables / parameters ----------------------------------------------------
  // variables---
   volatile boolean rotation_right_flag = 0; // interupt flack for rightward rotation
@@ -175,10 +178,11 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   volatile unsigned long ts; 
   unsigned long ts_start;
   unsigned long ts_access_start; 
+  unsigned long ts_tone_start;
   unsigned long ts_sol_offset;
   unsigned long ts_sol_onset;
   unsigned long ts_sol_ttl_off;
-  unsigned long ts_laser_offset;
+  unsigned long ts_extTTL_offset;
   unsigned long ts_lickomter_ttl_off; 
   unsigned long ts_rotation_active_ttl_off = 0;
   unsigned long ts_rotation_inactive_ttl_off = 0;
@@ -188,7 +192,8 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static unsigned long tm_switch_contingency;         
   static unsigned long tm_switch_reinforcer_availability; 
 
-  volatile unsigned long break_spout_delay; // random delay length between break and access period
+  volatile unsigned long break_access_delay; // random delay length between break and access period
+  volatile unsigned long break_tone_delay;   // random delay length between break and tone
   
   unsigned long session_end_ts;
 
@@ -202,56 +207,28 @@ void setup() {
   Serial.begin(115200);
   randomSeed(analogRead(0)); 
 
- // engage servo break prior to session start
-  servo_break.attach(pinServo_break); 
-  Serial.print(11); Serial.print(" "); Serial.println(ts);      
-  servo_break.write(servo_break_engaged_deg);
-
- // fully extend spout prior to session start if using liquid reinforcer
-  if(session_reinforcer == 0){
-    servo_retract.attach(pinServo_retract); 
-    Serial.print(13); Serial.print(" "); Serial.println(ts);      
-    servo_retract.write(servo_retract_extended_deg);
-  }
-
- // retract spout piror to session if using laser reinforcer
-  if(session_reinforcer == 1){
-    servo_retract.attach(pinServo_retract); 
-    Serial.print(15); Serial.print(" "); Serial.println(ts);      
-    servo_retract.write(servo_retract_retracted_deg);
-  }
-
- // delay with enough time for servos to move then detach
-  delay(1500);
-  servo_break.detach();
-  servo_retract.detach();
-
  // define inputs --------------------------------
   pinMode(pinRotaryEncoderA,INPUT_PULLUP);
   pinMode(pinRotaryEncoderB,INPUT_PULLUP);
-  pinMode(pinLickometer, INPUT);
   
  // define outputs
-  pinMode(pinSol, OUTPUT);
-  pinMode(pinLaser, OUTPUT);
-  pinMode(pinSpeaker, OUTPUT);
-  pinMode(pinImageStart, OUTPUT);
-  pinMode(pinImageStop, OUTPUT);
+  pinMode(pinServo_retract, OUTPUT);
+  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_radial, OUTPUT); 
+  
+  for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++) { // for each solenoid
+    pinMode(pinSol[i_sol], OUTPUT);                       // define sol as output
+    pinMode(pinLickometer_ttl[i_sol], OUTPUT);           // 
+  } 
+  
+  for(uint8_t i_extTTL = 0; i_extTTL < num_extTTL; i_extTTL++){
+    pinMode(pinExtTTL[i_extTTL], OUTPUT);
+  }
 
+  pinMode(pinSpeaker, OUTPUT);
   pinMode(pinSol_ttl, OUTPUT);
   pinMode(pinRotation_active_ttl, OUTPUT);
   pinMode(pinRotation_inactive_ttl, OUTPUT);
-  pinMode(pinLickometer_ttl, OUTPUT);
-
-  // setup capative touch sesnsor ---------------
-  if (!cap.begin(0x5A)) {                   // if the sensor is not detected
-    Serial.println("MPR121 not detected!"); // print warning (and crash python program)
-    while (1);
-  }
-
-  cap.setThresholds(6,2);
-  delay(50);
-  Serial.print(999);   Serial.print(" "); Serial.println(cap.filteredData(1));
 
  // rotary encoder ------------------------------
  // setup interupts for the rotary encoder 
@@ -264,17 +241,45 @@ void setup() {
   maskAB = maskA | maskB;
   port = portInputRegister(digitalPinToPort(pinRotaryEncoderA));
 
+// engage servo break prior to session start
+  servo_break.attach(pinServo_break); 
+  Serial.print(11); Serial.print(" "); Serial.println(ts);      
+  servo_break.write(servo_break_engaged_deg);
+  delay(250);
+  servo_break.detach();
+
+ // rotate multi-spout head prior to session start
+  servo_radial.attach(pinServo_radial);
+  servo_radial.write(servo_radial_degs[current_spout-1]);
+  Serial.print(130); Serial.print(" "); Serial.println(ts);   // print radial position moved
+  Serial.print(127); Serial.print(" "); Serial.println(ts);
+  Serial.print(127); Serial.print(" "); Serial.println(current_spout);
+  delay(250);
+  servo_radial.detach();
+
+ // fully extend spout prior to session start
+  servo_retract.attach(pinServo_retract); 
+  Serial.print(13); Serial.print(" "); Serial.println(ts);      
+  servo_retract.write(servo_retract_extended_degs[current_spout-1]);
+  delay(250);
+  servo_retract.detach();
+
+  // setup capative touch sesnsor ---------------
+  if (!cap.begin(0x5A)) {                   // if the sensor is not detected
+    Serial.println("MPR121 not detected!"); // print warning (and crash python program)
+    while (1);
+  }
+
+  cap.setThresholds(6,2);
+  delay(50);
+  Serial.print(998);   Serial.print(" "); Serial.println(cap.filteredData(1));
 
  // wait for serial command before initating session---------------------------------------------------------------------
-  if(session_serial_initiate){
-    while (Serial.available() <= 0) {} // wait for serial input to start session
-  }
+  while (Serial.available() <= 0) {} // wait for serial input to start session
+  delay(100);
 
  // save start time and send ttl to initate scope
   ts_start=millis();  
-  digitalWrite(pinImageStart, HIGH);
-  delay(100);
-  digitalWrite(pinImageStart, LOW);
 }
 
 
@@ -299,7 +304,7 @@ void loop() {
 
  // close solenoids---------------------------
   if(ts>=ts_sol_offset && ts_sol_offset!=0){                 // if time is after solenoid offset time
-    digitalWrite(pinSol, LOW);                               // close solenoid
+    digitalWrite(pinSol[current_spout - 1], LOW);                               // close solenoid
     Serial.print(14); Serial.print(" "); Serial.println(ts); // print sol offset
     ts_sol_offset = 0;    // reset solenoid offset time to close if statement
     }
@@ -307,7 +312,7 @@ void loop() {
  // turn off ttls for external time stamps ------------------------
  // lick---
   if(ts>=ts_lickomter_ttl_off && ts_lickomter_ttl_off!=0){
-    digitalWrite(pinLickometer_ttl,LOW); // write ttl low
+    digitalWrite(pinLickometer_ttl[current_spout - 1],LOW); // write ttl low
     ts_lickomter_ttl_off = 0;            // reset off time to close if statement
   }
   
@@ -336,51 +341,48 @@ void loop() {
     Serial.print(101); Serial.print(" "); Serial.println(rotary_resoltion);            // print rotary_resoltion
     Serial.print(103); Serial.print(" "); Serial.println(session_break);               // print session_break
     Serial.print(104); Serial.print(" "); Serial.println(session_retract);             // print session_retract
-    Serial.print(105); Serial.print(" "); Serial.println(session_serial_initiate);     // print session_serial_initiate
     Serial.print(107); Serial.print(" "); Serial.println(session_reinforcer);          // print session_reinforcer
-    Serial.print(108); Serial.print(" "); Serial.println(laser_posneg);                // print laser_posneg
+    Serial.print(108); Serial.print(" "); Serial.println(extTTL_posneg);                // print extTTL_posneg
     Serial.print(109); Serial.print(" "); Serial.println(schedule);                    // print schedule
     Serial.print(110); Serial.print(" "); Serial.println(pr_step);                     // print pr_step
     Serial.print(111); Serial.print(" "); Serial.println(pr_function);                 // print pr_function
-    Serial.print(112); Serial.print(" "); Serial.println(break_sol_delay);             // print break_sol_delay
-    Serial.print(113); Serial.print(" "); Serial.println(min_delay);                   // print min_delay
-    Serial.print(114); Serial.print(" "); Serial.println(max_delay);                   // print max_delay
+    Serial.print(112); Serial.print(" "); Serial.println(break_delay);                 // print break_delay
+    Serial.print(113); Serial.print(" "); Serial.println(break_to_access_delay_min);   // print break_to_access_delay_min
+    Serial.print(114); Serial.print(" "); Serial.println(break_to_access_delay_max);   // print break_to_access_delay_max
+    Serial.print(140); Serial.print(" "); Serial.println(break_to_tone_delay_min);     // print break_to_tone_delay_min
+    Serial.print(141); Serial.print(" "); Serial.println(break_to_tone_delay_max);     // print break_to_tone_delay_max
     Serial.print(115); Serial.print(" "); Serial.println(access_time);                 // print access_time
-    Serial.print(116); Serial.print(" "); Serial.println(sol_duration);                // print sol_duration
     Serial.print(117); Serial.print(" "); Serial.println(num_sol);                     // print num_sol
     Serial.print(118); Serial.print(" "); Serial.println(inter_sol_time);              // print inter_sol_time
-    Serial.print(119); Serial.print(" "); Serial.println(laser_duration);              // print laser_duration
+    Serial.print(119); Serial.print(" "); Serial.println(extTTL_duration);              // print extTTL_duration
     Serial.print(120); Serial.print(" "); Serial.println(duration_additional_to);      // print duration_
     Serial.print(121); Serial.print(" "); Serial.println(tone_freq);                   // print tone_fr
     Serial.print(122); Serial.print(" "); Serial.println(tone_duration);               // print tone_duration
     Serial.print(124); Serial.print(" "); Serial.println(tm_switch_contingency_step);               // print tm_switch_contingency_step
     Serial.print(125); Serial.print(" "); Serial.println(tm_switch_reinforcer_availability_step);   // print tm_switch_reinforcer_availability_step
-    Serial.print(126); Serial.print(" "); Serial.println(session_setback);             // print sessio
+    Serial.print(126); Serial.print(" "); Serial.println(session_setback);             // print session_setback
     
    // disengage break
     servo_break.attach(pinServo_break); 
     Serial.print(12); Serial.print(" "); Serial.println(ts);      
     servo_break.write(servo_break_disengaged_deg);
-
+    delay(250); 
+    servo_break.detach();
+    
    // retract spout
     if(session_retract){ 
       servo_retract.attach(pinServo_retract); 
       Serial.print(15); Serial.print(" "); Serial.println(ts);      
       servo_retract.write(servo_retract_retracted_deg);
     }
-    
-   // allow time for servo travel and detach
-    delay(500); 
-    servo_break.detach();
+    delay(250); 
     servo_retract.detach();
 
-    if(session_reinforcer == 1 && laser_posneg == 1){ // if laser reinforcer and negative reinforcement
-      digitalWrite(pinLaser, HIGH);
-      Serial.print(16); Serial.print(" "); Serial.println(ts);    // print laser onset
-      
+    if(session_reinforcer == 1 && extTTL_posneg == 1){ // if extTTL reinforcer and negative reinforcement
+      digitalWrite(pinExtTTL[current_extTTL - 1], HIGH);
+      Serial.print(16); Serial.print(" "); Serial.println(ts);    // print extTTL onset
       }
-    
-    session_end_ts = ts + session_duration; // set session end time 
+
     Serial.print(102);   Serial.print(" "); Serial.println(ts);             // print time for ratio (ts must precede value)
     Serial.print(102);   Serial.print(" "); Serial.println(current_ratio);  // print current ratio
 
@@ -402,6 +404,8 @@ void loop() {
    if(schedule==1){                     // if progressive ratio
     ts_pr_timeout = ts + pr_timeout;    // set timeout time current time + timeout duration
    }
+
+    session_end_ts = ts + session_duration; // set session end time 
   }
 
 // parameter switches ------------------------------------------------------------------------------
@@ -427,33 +431,30 @@ void loop() {
  // check state of sensor to see if it is currently touched
   currtouched = cap.touched(); 
 
- // check to see if touch onset occured
-  for (uint8_t i=1; i<2; i++) { // for each sensor (change the maximum i if more touch sensors are added)
-    if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) ) { // if touched now but not previously
-      lick=1;                                                 // flag lick
-    }
+  // check to see if touch onset occured
+  if ((currtouched & _BV(current_spout)) && !(lasttouched & _BV(current_spout)) ) { // if touched now but not previously
+    lick = current_spout;
   }
 
  // save current state for comparision with next state
   lasttouched = currtouched; 
 
  // programed consequences to licking
-  if (lick==1){ // if lick has occured
-      Serial.print(31); Serial.print(" "); Serial.println(ts); // print lick onset
-      digitalWrite(pinLickometer_ttl,HIGH);                    // turn on ttl for external ts
+  if (lick > 0) { // if lick has occured
+      Serial.print(30 + current_spout); Serial.print(" "); Serial.println(ts); // print lick onset
+      digitalWrite(pinLickometer_ttl[current_spout-1],HIGH);                    // turn on ttl for external ts
       ts_lickomter_ttl_off = ts + ttl_duration;                // set ttl offset time
 
       lick=0; // reset lick flag to close if statement
   }
 
-
 // rotary encoder ---------------------------------------------------------------------------------------------
  // right rotation -----------------------------------------------------------------------------
    if(rotation_right_flag){
     if(session_contingency_current == 0){ // if right = active
-    rotation_active_counter_trial++;      // increase active counter 
+      rotation_active_counter_trial++;      // increase active counter 
     } else {                              // if left  = active
-    rotation_inactive_counter_trial++;    // increase inactive counter 
+      rotation_inactive_counter_trial++;    // increase inactive counter 
     }
     rotation_right_flag = 0; // reset right flag to close if statement
    }
@@ -539,9 +540,12 @@ void loop() {
         if(session_break){fun_servo_break_engage();}                // engage break
         rotation_gate = 0;                                          // close rotation gate
         
-        break_spout_delay = random(min_delay, max_delay);           // calculate random delay
-        ts_access_start = ts + break_sol_delay + break_spout_delay; // set access start time 
-
+        break_access_delay = random(break_to_access_delay_min, break_to_access_delay_max);         // calculate random delay
+        ts_access_start = ts + break_delay + break_access_delay; // set access start time 
+        
+        break_tone_delay = random(break_to_access_delay_min, break_to_access_delay_max);           // calculate random delay
+        ts_tone_start = ts + break_delay + break_tone_delay; // set access start time 
+        
       // increase ratio if pr
       if(schedule == 1){ // if pr
         current_ratio = current_ratio + pr_step_current;  // increase current ratio by current step
@@ -558,7 +562,11 @@ void loop() {
         }
       } 
 
-      
+     // start tone---------------------
+      if(ts >= ts_tone_start && ts_tone_start != 0){
+        tone(pinSpeaker, tone_freq, tone_duration); 
+        Serial.print(51); Serial.print(" "); Serial.println(ts); // print tone onset
+      }
       
      // start access period------------
       if(ts >= ts_access_start && ts_access_start != 0){
@@ -567,20 +575,19 @@ void loop() {
         ts_to_end = ts_servo_retract_retracted + duration_additional_to; // set end of to time
         ts_sol_onset = ts;                                  // set solenoid onset time to current time
         ts_access_start = 0;
-        tone(pinSpeaker, tone_freq, tone_duration); 
       }
 
      // open solenoid num_sol times----
       if(ts >= ts_sol_onset && ts_sol_onset != 0 &&  count_sol < num_sol){
-        digitalWrite(pinSol,HIGH);          // open solenoid
-        ts_sol_offset = ts + sol_duration;  // set solenoid close time
+        digitalWrite(pinSol[current_spout - 1],HIGH);          // open solenoid
+        ts_sol_offset = ts + sol_duration[current_spout - 1];  // set solenoid close time
         
         Serial.print(18); Serial.print(" "); Serial.println(ts); // print sol onset
         
         digitalWrite(pinSol_ttl,HIGH);      // turn on ttl for solenoid onset 
         ts_sol_ttl_off = ts + ttl_duration; // set ttl offset time
 
-        ts_sol_onset = ts + inter_sol_time + sol_duration; // set next solenoid onset time
+        ts_sol_onset = ts + inter_sol_time + sol_duration[current_spout - 1]; // set next solenoid onset time
         count_sol++;                                       // increase counter for solenoid
       }
 
@@ -609,16 +616,20 @@ void loop() {
     }
   }
   
- // laser reinforcer ----------------------------------------------------------------
-  if(session_reinforcer == 1){ // if using laser as reinforcer and reinforcer is available
+ // extTTL reinforcer ---------------------------------------------------------------
+  if(session_reinforcer == 1){ // if using extTTL as reinforcer and reinforcer is available
   if (rotation_active >= current_ratio) { // once down sampled rotation count reaches fixed ratio
      // initialize access period-----
       if(ts_access_start == 0 && ts_to_end == 0){ 
         if(session_break){fun_servo_break_engage();}                // engage break
         rotation_gate = 0;                                          // close rotation gate
         Serial.print(82); Serial.print(" "); Serial.println(ts);    // print reached criteria
-        break_spout_delay = random(min_delay, max_delay);           // calculate random delay
-        ts_access_start = ts + break_sol_delay + break_spout_delay; // set access start time
+        
+        break_access_delay = random(break_to_access_delay_min, break_to_access_delay_max);           // calculate random delay
+        ts_access_start = ts + break_delay + break_access_delay; // set access start time
+
+        break_tone_delay = random(break_to_access_delay_min, break_to_access_delay_max);           // calculate random delay
+        ts_tone_start = ts + break_delay + break_tone_delay; // set access start time 
         
         // increase ratio if pr
         if(schedule == 1){ // if pr
@@ -634,37 +645,42 @@ void loop() {
           }
       }
 
-     // start breaked period and change laser state---
+     // start tone---------------------
+      if(ts >= ts_tone_start && ts_tone_start != 0){
+        tone(pinSpeaker, tone_freq, tone_duration); 
+        Serial.print(51); Serial.print(" "); Serial.println(ts); // print tone onset
+      }
+      
+     // start breaked period and change extTTL state--
       if(ts >= ts_access_start && ts_access_start != 0){
         ts_access_start = 0;
 
-        if(laser_posneg == 0){ // if positive reinforcement ----
-          digitalWrite(pinLaser, HIGH);                               // turn on laser
-          Serial.print(16); Serial.print(" "); Serial.println(ts);    // print laser onset
+        if(extTTL_posneg == 0){ // if positive reinforcement ----
+          digitalWrite(pinExtTTL[current_extTTL - 1], HIGH);                               // turn on extTTL
+          Serial.print(16); Serial.print(" "); Serial.println(ts);    // print extTTL onset
         }
 
-        if(laser_posneg == 1){ // if negative reinforcement ----
-          digitalWrite(pinLaser, LOW);                                // turn off laser
-          Serial.print(17); Serial.print(" "); Serial.println(ts);    // print laser onset
+        if(extTTL_posneg == 1){ // if negative reinforcement ----
+          digitalWrite(pinExtTTL[current_extTTL - 1], LOW);                                // turn off extTTL
+          Serial.print(17); Serial.print(" "); Serial.println(ts);    // print extTTL onset
         }
 
-        ts_laser_offset = ts + laser_duration;                                  // set laser onset
-        ts_to_end = ts_laser_offset + duration_additional_to;                   // set end of to time
-        tone(pinSpeaker, tone_freq, tone_duration); 
+        ts_extTTL_offset = ts + extTTL_duration;                                  // set extTTL onset
+        ts_to_end = ts_extTTL_offset + duration_additional_to;                   // set end of to time
       }
 
-     // change laser state & end breaked peroid---
-      if(ts >= ts_laser_offset && ts_laser_offset != 0){
-        ts_laser_offset = 0; 
+     // change extTTL state & end breaked peroid---
+      if(ts >= ts_extTTL_offset && ts_extTTL_offset != 0){
+        ts_extTTL_offset = 0; 
         
-         if(laser_posneg == 0){ // if positive reinforcement ----
-          digitalWrite(pinLaser, LOW);                                // turn off laser
-          Serial.print(17); Serial.print(" "); Serial.println(ts);    // print laser onset
+         if(extTTL_posneg == 0){ // if positive reinforcement ----
+          digitalWrite(pinExtTTL[current_extTTL - 1], LOW);                                // turn off extTTL
+          Serial.print(17); Serial.print(" "); Serial.println(ts);    // print extTTL onset
         }
 
-        if(laser_posneg == 1){ // if negative reinforcement ----
-          digitalWrite(pinLaser, HIGH);                               // turn on laser
-          Serial.print(16); Serial.print(" "); Serial.println(ts);    // print laser onset
+        if(extTTL_posneg == 1){ // if negative reinforcement ----
+          digitalWrite(pinExtTTL[current_extTTL - 1], HIGH);                               // turn on extTTL
+          Serial.print(16); Serial.print(" "); Serial.println(ts);    // print extTTL onset
         }
       }
 
@@ -690,7 +706,7 @@ void loop() {
           rotation_gate = 0;                       // close rotation gate
           Serial.print(72); Serial.print(" "); Serial.println(ts); // print stim/tone onset
           fun_servo_break_engage();                // engage break
-          ts_to_end = ts + break_sol_delay + access_time + duration_additional_to;
+          ts_to_end = ts + break_delay + access_time + duration_additional_to;
         }
 
         if(ts > ts_to_end && ts_to_end != 0){
@@ -776,7 +792,7 @@ void fun_servo_break_disengage(){ //--------------------------------------
 
 void fun_servo_retract_extended(){ //-------------------------------------
   servo_retract.attach(pinServo_retract);  
-  servo_retract.write(servo_retract_extended_deg);
+  servo_retract.write(servo_retract_extended_degs[current_spout - 1]);
   Serial.print(13); Serial.print(" "); Serial.println(ts);            
   detach_servo_retract_ts = ts + detach_servo_retract_step;
 }
@@ -790,24 +806,18 @@ void fun_servo_retract_retracted(){ //------------------------------------
 
 /// end session -------------------------------------------------------------------------------------------
 void fun_end_session() {
-  digitalWrite(pinImageStop, HIGH);
   servo_break.attach(pinServo_break);  
   servo_break.write(servo_break_engaged_deg);
-  Serial.print(11); Serial.print(" "); Serial.println(ts);     
+  Serial.print(11); Serial.print(" "); Serial.println(ts);   
+  delay(250);
+  servo_break.detach();    
 
   servo_retract.attach(pinServo_retract);  
   servo_retract.write(servo_retract_retracted_deg);
   Serial.print(15); Serial.print(" "); Serial.println(ts); 
-  
-  delay(500);
-  
-  digitalWrite(pinImageStop, LOW); 
-  servo_break.detach();  
+  delay(250);
   servo_retract.detach();  
   
   Serial.print(0); Serial.print(" "); Serial.println(ts);    // print end of session                 
-  while(1){}                               //  Stops executing the program
+  while(1){}                                                 // Stops executing the program
 }
-
-  
- 

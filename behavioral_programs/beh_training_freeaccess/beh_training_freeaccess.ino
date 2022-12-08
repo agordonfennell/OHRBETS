@@ -33,7 +33,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static byte num_spouts = 5; // should have this many values for each of the following vectors
 
   // spout vectors (each element will correspond to a spout, add or remove elements based on system, default is setup for 5 spouts)
-  static byte pinSol[] =                      {  4,  5,  6,  8,  9};
+  static byte pinSol[] =                      {  4,  5,  6,  7,  8};
   static byte sol_duration[] =                { 30, 30, 30, 30, 30}; // calibrate to ~1.5µL / delivery
   static byte servo_radial_degs [] =          {  0, 30, 60, 90,120};
   static byte servo_retract_extended_degs[] = {180,180,180,180,180};
@@ -151,15 +151,10 @@ void loop() {
   ts=millis()-ts_start;
 
  // close solenoids---------------------------
-  if (ts >= ts_sol_offset && ts_sol_offset != 0) {         // if time is after solenoid offset time
-    for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++) { // for each sol
-      digitalWrite(pinSol[i_sol], LOW);                    // set state to low
-
-      if (i_sol == num_spouts - 1) {
-        Serial.print(14); Serial.print(" "); Serial.println(ts); // print sol offset
-        ts_sol_offset = 0;    // reset solenoid offset time to close if statement
-      }
-    }
+  if (ts >= ts_sol_offset && ts_sol_offset != 0) {           // if time is after solenoid offset time
+    digitalWrite(pinSol[current_spout - 1], LOW);              // set state to low
+    Serial.print(14); Serial.print(" "); Serial.println(ts); // print sol offset
+    ts_sol_offset = 0;                                       // reset solenoid offset time to close if statement
   }
 
  // turn off ttls for external time stamps ------------------------

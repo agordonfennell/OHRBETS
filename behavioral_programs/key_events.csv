@@ -21,9 +21,11 @@ event_key,event_id,event_id_char,id_type
 1,117,num_sol,param
 1,116,sol_duration,param
 1,115,access_time,param
-1,114,max_delay,param
-1,113,min_delay,param
-1,112,break_sol_delay,param
+1,113,break_to_access_delay_min,param
+1,114,break_to_access_delay_max,param
+1,140,break_to_tone_delay_min,param
+1,141,break_to_tone_delay_max,param
+1,112,break_delay,param
 1,111,pr_function,param
 1,110,pr_step,param
 1,109,schedule,param

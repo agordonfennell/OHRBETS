@@ -38,7 +38,9 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static boolean session_tone = 1;     // 0: no tone; 1: tone
 
  // spout vectors (each element will correspond to a spout, add or remove elements based on system, default is setup for 5 spouts)
-  static byte pinSol[] =                      {  4,  5,  6,  8,  9};
+  static byte num_spouts = 5; // should have this many values for each of the following vectors
+  
+  static byte pinSol[] =                      {  4,  5,  6,  7,  8};
   static byte sol_duration[] =                { 30, 30, 30, 30, 30}; // calibrate to ~1.5µL / delivery
   static byte servo_radial_degs [] =          {  0, 30, 60, 90,120};
   static byte servo_retract_extended_degs[] = {180,180,180,180,180};
@@ -56,16 +58,12 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   
   static byte num_sol = 5;                // number of solenoid opening access period
   
-  static int inter_sol_time = 180 - sol_duration[current_spout-1];        // interval between each solenoid opening (measured from end of previous until start of next)
+  int inter_sol_time = 180 - sol_duration[current_spout-1];        // interval between each solenoid opening (measured from end of previous until start of next)
  
  // tone cue -----------------
   static unsigned long tone_freq = 5000;  // (Hz)
   static int tone_duration = 2000;        // tone duration (ms)
   static int tone_to_access_delay = 3000; // delay from onset of tone to onset of access period (ms)
-
-  // spout / sol pins & parameters
-  static byte num_spouts = 5; // should have this many values for each of the following vectors
-
 
 // arduino pins ----------------------------------------------------------------------------
  // inputs ----------------------------
@@ -94,7 +92,6 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 
 // servo retractable spout variables / parameters ------------------------------------------
   Servo servo_retract;
-  static byte servo_retract_extended_deg = 180;
   static byte servo_retract_retracted_deg = 140;
   unsigned long detach_servo_retract_ts = 0;
   static int detach_servo_retract_step = 200; // time in ms to allow for the servo to travel
@@ -143,7 +140,6 @@ void setup() {
   Serial.begin(115200);
   randomSeed(analogRead(0)); 
 
-
  // define outputs
   pinMode(pinSol_ttl, OUTPUT);
   pinMode(pinServo_retract, OUTPUT);
@@ -175,7 +171,7 @@ void setup() {
  // fully extend spout prior to session start
   servo_retract.attach(pinServo_retract); 
   Serial.print(13); Serial.print(" "); Serial.println(ts);      
-  servo_retract.write(servo_retract_extended_degs[current_spout]);
+  servo_retract.write(servo_retract_extended_degs[current_spout-1]);
   delay(250);
   servo_retract.detach();
 
@@ -257,7 +253,7 @@ void loop() {
     }
     
    // allow time for servo travel and detach
-    delay(500); 
+    delay(250); 
     servo_retract.detach();
 
    // set time for first delivery
@@ -365,7 +361,7 @@ void loop() {
 // servos ----------------------------------------------------------------
 void fun_servo_retract_extended(){ //-------------------------------------
   servo_retract.attach(pinServo_retract);  
-  servo_retract.write(servo_retract_extended_deg);
+  servo_retract.write(servo_retract_extended_degs[current_spout-1]);
   Serial.print(13); Serial.print(" "); Serial.println(ts);            
   detach_servo_retract_ts = ts + detach_servo_retract_step;
 }
