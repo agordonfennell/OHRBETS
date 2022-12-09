@@ -1,10 +1,11 @@
 
-import sys, os, threading, serial, time
-import csv
-     
-# serial library is installed with pip install pyserial
+import sys, os, threading, serial, time, csv
+from time import localtime, strftime
 
-def monitor():
+# serial library is installed with "pip install pyserial"
+
+# define function ------------------------------
+def read_serial():
    ser = serial.Serial(COMPORT, BAUDRATE, timeout=1)
 
    time.sleep(1)
@@ -30,32 +31,25 @@ def monitor():
 
           # stop connection following stop command
           if (int(line.split(" ")[0]) == 0):
-            print("Stop Monitoring")
+            print("stop read_serial")
             ser.close()
             running = 0
-
-
-
    
-
-""" -------------------------------------------
-MAIN APPLICATION 
-"""  
-
-print ("Start Serial Monitor")
-
+# **parameters** -------------------------------------
 COMPORT = "COM11";
 BAUDRATE = 115200;
 
-date = '2021_06_23'
+subject='test'
 
-#subject = 'aam02'
-subject = 'aam05'
-#subject = 'aam08'
+# excecution -----------------------------------------
+# output fn format: yyyy_mm_dd_subject
+# - if file already exists, local time will be appended to fn (e.g. yyyy_mm_dd_subject_hhmmss)
 
-#subject = 'test'
+fn = strftime("%Y_%m_%d", localtime()) + '_' + subject + '.csv'
 
-fn = date + "_" + subject + '.csv'
+if os.path.exists(fn):
+    fn = strftime("%Y_%m_%d", localtime()) + '_' + subject + '_' + strftime("%H%M%S", localtime()) + '.csv'
 
 
-monitor()
+print ("start read_serial")
+read_serial()
