@@ -83,3 +83,11 @@ event_key,event_id,event_id_char,id_type
 1,137,session_tone,param
 1,998,resting_cap,param
 1,138,tone_to_access_delay,param
+1,331,empty_lick,event
+1,332,empty_lick_02,event
+1,333,empty_lick_03,event
+1,334,empty_lick_04,event
+1,335,empty_lick_05,event
+1,336,empty_lick_06,event
+1,213,delay_sweep_to_radial_min,param
+1,214,delay_sweep_to_radial_max,param

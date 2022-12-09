@@ -44,7 +44,7 @@ MAIN APPLICATION
 
 print ("Start Serial Monitor")
 
-COMPORT = "COM6";
+COMPORT = "COM11";
 BAUDRATE = 115200;
 
 date = '2021_06_23'

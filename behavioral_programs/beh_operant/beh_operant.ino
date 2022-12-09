@@ -543,7 +543,7 @@ void loop() {
         break_access_delay = random(break_to_access_delay_min, break_to_access_delay_max);         // calculate random delay
         ts_access_start = ts + break_delay + break_access_delay; // set access start time 
         
-        break_tone_delay = random(break_to_access_delay_min, break_to_access_delay_max);           // calculate random delay
+        break_tone_delay = random(break_to_tone_delay_min, break_to_tone_delay_max);           // calculate random delay
         ts_tone_start = ts + break_delay + break_tone_delay; // set access start time 
         
       // increase ratio if pr
@@ -566,6 +566,7 @@ void loop() {
       if(ts >= ts_tone_start && ts_tone_start != 0){
         tone(pinSpeaker, tone_freq, tone_duration); 
         Serial.print(51); Serial.print(" "); Serial.println(ts); // print tone onset
+        ts_tone_start = 0;
       }
       
      // start access period------------
@@ -649,6 +650,7 @@ void loop() {
       if(ts >= ts_tone_start && ts_tone_start != 0){
         tone(pinSpeaker, tone_freq, tone_duration); 
         Serial.print(51); Serial.print(" "); Serial.println(ts); // print tone onset
+        ts_tone_start = 0;
       }
       
      // start breaked period and change extTTL state--
