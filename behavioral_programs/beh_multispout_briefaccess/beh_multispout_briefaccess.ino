@@ -34,7 +34,6 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   
   byte spout_block_set[] = {3,4,1,0,2,0,2,3,1,4,3,4,2,0,1,3,4,0,1,2,4,0,1,0,4,2,3,1,3,2,4,0,3,1,1,2,0,4,3,2,1,2,3,0,4,4,0,1,3,2,2,1,0,4,3,0,2,1,4,3,2,0,0,2,1,4,4,3,1,3,3,0,3,4,1,1,2,2,4,0,2,3,0,1,1,2,4,4,3,0,2,0,4,1,3,0,3,2,4,1};
  
-  
   unsigned long access_time = 3000; // total time before spout is retracted
   unsigned long min_iti = 8000;     // minimum iti (ms)
   unsigned long max_iti = 13000;    // maximum iti (ms)
@@ -46,7 +45,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long ts_print_cap_step;
   
   static byte num_spouts = 5;
-  
+
   static byte pinSol[]       =                { 4,   5,  6,  8,  9};
   static byte sol_duration[] =                { 28, 34, 22, 38, 11};
   static byte pinLickometer_ttl[] =           { 24, 24, 24, 24, 24}; 
@@ -217,7 +216,7 @@ void setup() {
       
       
       for (int i = 0; i < sizeof(spout_block_set); i++) {
-        spout_block_set[i] = i % 5;
+        spout_block_set[i] = i % num_spouts;
       } 
        
       access_time = 3000; // total time before spout is retracted
