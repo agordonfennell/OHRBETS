@@ -33,6 +33,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   byte trial_count = 100;
   
   byte spout_block_set[] = {3,4,1,0,2,0,2,3,1,4,3,4,2,0,1,3,4,0,1,2,4,0,1,0,4,2,3,1,3,2,4,0,3,1,1,2,0,4,3,2,1,2,3,0,4,4,0,1,3,2,2,1,0,4,3,0,2,1,4,3,2,0,0,2,1,4,4,3,1,3,3,0,3,4,1,1,2,2,4,0,2,3,0,1,1,2,4,4,3,0,2,0,4,1,3,0,3,2,4,1};
+ 
   
   unsigned long access_time = 3000; // total time before spout is retracted
   unsigned long min_iti = 8000;     // minimum iti (ms)
@@ -211,24 +212,30 @@ void setup() {
   
   mode = Serial.parseInt(); // read serial to determine mode (1: run session, 2: test rotation calibration, 3: test touch response
 
-  if(mode == 2){ // test rotation / extension calibration
-    Serial.println("TESTING ROTATION / EXTENSION CALIBRATION");
-    trial_count = 100;
-    byte spout_block_set[] = {0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4};
+    if(mode == 2){ // test rotation / extension calibration
+      Serial.println("TESTING ROTATION / EXTENSION CALIBRATION");
+      
+      
+      for (int i = 0; i < sizeof(spout_block_set); i++) {
+        spout_block_set[i] = i % 5;
+      } 
+       
+      access_time = 3000; // total time before spout is retracted
+      min_iti = 3000;     // minimum iti (ms)
+      max_iti = 3000;    // maximum iti (ms)
+    }
     
-    access_time = 3000; // total time before spout is retracted
-    min_iti = 3000;     // minimum iti (ms)
-    max_iti = 3000;    // maximum iti (ms)
-  }
-  
-  if(mode == 2){ // test touch response
-    Serial.println("TESTING TOUCH RESPONSE");
-    trial_count = 5;
-    byte spout_block_set[] = {4,4,4,4,4};
-    access_time = 600000; // total time before spout is retracted
-    min_iti = 3000;     // minimum iti (ms)
-    max_iti = 3000;    // maximum iti (ms)
-  }
+    if(mode == 3){ // test touch response
+      Serial.println("TESTING TOUCH RESPONSE");
+
+      for (int i = 0; i < sizeof(spout_block_set); i++) {
+        spout_block_set[i] = 4;
+      }   
+      
+      access_time = 600000; // total time before spout is retracted
+      min_iti = 3000;     // minimum iti (ms)
+      max_iti = 3000;    // maximum iti (ms)
+    }
 
   delay(100);
 

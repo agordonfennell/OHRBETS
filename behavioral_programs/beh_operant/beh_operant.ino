@@ -40,13 +40,13 @@ This program uses multiple dependencies (see protocol: for instructions on insta
  // general parameters -------
   static unsigned long session_duration = 1800000; // session duration (ms) (note: avoid using formula here)
   static boolean session_break = 1;            // 0: no break during access period, 1: break engaged during access period
-  static boolean inactive_break = 1;           //  0: no break following inactive response, 1: break for equivalent time to active response
+  static boolean inactive_break = 1;           // 0: no break following inactive response, 1: break for equivalent time to active response
   static boolean session_retract = 1;          // 0: no retractable spout, 1: retractable spout
   boolean session_contingency_current = 0;     // 0: right = active, 1: left = active
   boolean session_reinforcer_availability = 0; // 0: availible, 1: not availible
   static boolean session_reinforcer = 0;       // 0: liquid, 1: ttl out (laser, or other external hardware)
   static boolean session_setback = 1;          // 0: no setback, 1: setback to zero, 2: setback to negative
-  static boolean extTTL_posneg = 0;             // 0: pos reinforcement (resp->on), 1: neg reinforcement (resp->off)
+  static boolean extTTL_posneg = 0;            // 0: pos reinforcement (resp->on), 1: neg reinforcement (resp->off)
 
  // spout vectors (each element will correspond to a spout, add or remove elements based on system, default is setup for 5 spouts)
   static byte num_spouts = 5; // should have this many values for each of the following vectors

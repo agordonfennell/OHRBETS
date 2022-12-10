@@ -66,17 +66,15 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static int tone_to_access_delay = 3000; // delay from onset of tone to onset of access period (ms)
 
 // arduino pins ----------------------------------------------------------------------------
- // inputs ----------------------------
-  static byte pinLickometer = 6;   
-  
  // outputs ---------------------------
   static byte pinServo_retract = 9; 
   static byte pinServo_break = 10;
   static byte pinServo_radial = 11;
   static byte pinSpeaker = 12;  
 
-  // ttls for external time stamps //NOTE: ADD PINTONE_TTL
-  static byte pinSol_ttl = 52;
+  // ttls for external time stamps
+  static byte pinSol_ttl = 23;
+  static byte pinTone_ttl = 24;
 
 //capicitance sensor variables
   Adafruit_MPR121 cap = Adafruit_MPR121();
@@ -122,6 +120,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long ts_sol_offset;
   unsigned long ts_sol_onset;
   unsigned long ts_sol_ttl_off;
+  unsigned long ts_tone_ttl_off;
   unsigned long ts_lickomter_ttl_off; 
   boolean flag_access_complete;
   boolean flag_tone_complete;
@@ -142,6 +141,7 @@ void setup() {
 
  // define outputs
   pinMode(pinSol_ttl, OUTPUT);
+  pinMode(pinTone_ttl, OUTPUT);
   pinMode(pinServo_retract, OUTPUT);
   pinMode(pinServo_break, OUTPUT);  
   pinMode(pinServo_radial, OUTPUT); 
@@ -228,6 +228,11 @@ void loop() {
     ts_sol_ttl_off = 0;            // reset off time to close if statement
   }
 
+ // tone---
+  if(ts>=ts_tone_ttl_off && ts_tone_ttl_off!=0){
+    digitalWrite(pinTone_ttl,LOW);  // write ttl low
+    ts_sol_ttl_off = 0;            // reset off time to close if statement
+  }
   
 // session initialization (runs once at start) -----------------------------------------------------------------
   if(first_loop){
@@ -292,10 +297,14 @@ void loop() {
     if(session_tone){
       tone(pinSpeaker, tone_freq, tone_duration);  
       Serial.print(51); Serial.print(" "); Serial.println(ts); // print tone onset
+
+      digitalWrite(pinTone_ttl,HIGH);       // set pin for ttl marker to high
+      ts_sol_ttl_off = ts + tone_duration; // set time for ttl marker to turn off
     }
     flag_tone_complete = 1;
     ts_tone_start = 0;
  }
+
  
  // start access period------------
   if(ts >= ts_access_start && ts_access_start != 0){
