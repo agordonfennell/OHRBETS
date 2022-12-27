@@ -21,9 +21,11 @@ Helper Programs:
  ~these programs are used to assist with setting up for behavioral
   experiments
 
- - ard_helper_opensol
+ - helper_opensol
    ~this program is used to manually open solenoids for each spout
     using a touch on the spout or a serial input   
+
+- helper_callibratespout
 
 
 Scripts:
