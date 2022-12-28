@@ -336,31 +336,31 @@ void loop() {
   
 // session initialization (runs once at start) -----------------------------------------------------------------
   if(session_end_ts == 0){
-    Serial.print(1);   Serial.print(" "); Serial.println(ts);             // print start session
-    Serial.print(100); Serial.print(" "); Serial.println(session_duration);            // print session duration
-    Serial.print(101); Serial.print(" "); Serial.println(rotary_resoltion);            // print rotary_resoltion
-    Serial.print(103); Serial.print(" "); Serial.println(session_break);               // print session_break
-    Serial.print(104); Serial.print(" "); Serial.println(session_retract);             // print session_retract
-    Serial.print(107); Serial.print(" "); Serial.println(session_reinforcer);          // print session_reinforcer
-    Serial.print(108); Serial.print(" "); Serial.println(extTTL_posneg);                // print extTTL_posneg
-    Serial.print(109); Serial.print(" "); Serial.println(schedule);                    // print schedule
-    Serial.print(110); Serial.print(" "); Serial.println(pr_step);                     // print pr_step
-    Serial.print(111); Serial.print(" "); Serial.println(pr_function);                 // print pr_function
-    Serial.print(112); Serial.print(" "); Serial.println(break_delay);                 // print break_delay
-    Serial.print(113); Serial.print(" "); Serial.println(break_to_access_delay_min);   // print break_to_access_delay_min
-    Serial.print(114); Serial.print(" "); Serial.println(break_to_access_delay_max);   // print break_to_access_delay_max
-    Serial.print(140); Serial.print(" "); Serial.println(break_to_tone_delay_min);     // print break_to_tone_delay_min
-    Serial.print(141); Serial.print(" "); Serial.println(break_to_tone_delay_max);     // print break_to_tone_delay_max
-    Serial.print(115); Serial.print(" "); Serial.println(access_time);                 // print access_time
-    Serial.print(117); Serial.print(" "); Serial.println(num_sol);                     // print num_sol
-    Serial.print(118); Serial.print(" "); Serial.println(inter_sol_time);              // print inter_sol_time
-    Serial.print(119); Serial.print(" "); Serial.println(extTTL_duration);              // print extTTL_duration
-    Serial.print(120); Serial.print(" "); Serial.println(duration_additional_to);      // print duration_
-    Serial.print(121); Serial.print(" "); Serial.println(tone_freq);                   // print tone_fr
-    Serial.print(122); Serial.print(" "); Serial.println(tone_duration);               // print tone_duration
-    Serial.print(124); Serial.print(" "); Serial.println(tm_switch_contingency_step);               // print tm_switch_contingency_step
-    Serial.print(125); Serial.print(" "); Serial.println(tm_switch_reinforcer_availability_step);   // print tm_switch_reinforcer_availability_step
-    Serial.print(126); Serial.print(" "); Serial.println(session_setback);             // print session_setback
+    Serial.print(1);   Serial.print(" "); Serial.println(ts);                          delay(3);// print start session
+    Serial.print(100); Serial.print(" "); Serial.println(session_duration);            delay(3);// print session duration
+    Serial.print(101); Serial.print(" "); Serial.println(rotary_resoltion);            delay(3);// print rotary_resoltion
+    Serial.print(103); Serial.print(" "); Serial.println(session_break);               delay(3);// print session_break
+    Serial.print(104); Serial.print(" "); Serial.println(session_retract);             delay(3);// print session_retract
+    Serial.print(107); Serial.print(" "); Serial.println(session_reinforcer);          delay(3);// print session_reinforcer
+    Serial.print(108); Serial.print(" "); Serial.println(extTTL_posneg);               delay(3);// print extTTL_posneg
+    Serial.print(109); Serial.print(" "); Serial.println(schedule);                    delay(3);// print schedule
+    Serial.print(110); Serial.print(" "); Serial.println(pr_step);                     delay(3);// print pr_step
+    Serial.print(111); Serial.print(" "); Serial.println(pr_function);                 delay(3);// print pr_function
+    Serial.print(112); Serial.print(" "); Serial.println(break_delay);                 delay(3);// print break_delay
+    Serial.print(113); Serial.print(" "); Serial.println(break_to_access_delay_min);   delay(3);// print break_to_access_delay_min
+    Serial.print(114); Serial.print(" "); Serial.println(break_to_access_delay_max);   delay(3);// print break_to_access_delay_max
+    Serial.print(140); Serial.print(" "); Serial.println(break_to_tone_delay_min);     delay(3);// print break_to_tone_delay_min
+    Serial.print(141); Serial.print(" "); Serial.println(break_to_tone_delay_max);     delay(3);// print break_to_tone_delay_max
+    Serial.print(115); Serial.print(" "); Serial.println(access_time);                 delay(3);// print access_time
+    Serial.print(117); Serial.print(" "); Serial.println(num_sol);                     delay(3);// print num_sol
+    Serial.print(118); Serial.print(" "); Serial.println(inter_sol_time);              delay(3);// print inter_sol_time
+    Serial.print(119); Serial.print(" "); Serial.println(extTTL_duration);             delay(3);// print extTTL_duration
+    Serial.print(120); Serial.print(" "); Serial.println(duration_additional_to);      delay(3);// print duration_
+    Serial.print(121); Serial.print(" "); Serial.println(tone_freq);                   delay(3);// print tone_fr
+    Serial.print(122); Serial.print(" "); Serial.println(tone_duration);               delay(3);// print tone_duration
+    Serial.print(124); Serial.print(" "); Serial.println(tm_switch_contingency_step);               delay(3);// print tm_switch_contingency_step
+    Serial.print(125); Serial.print(" "); Serial.println(tm_switch_reinforcer_availability_step);   delay(3);// print tm_switch_reinforcer_availability_step
+    Serial.print(126); Serial.print(" "); Serial.println(session_setback);             delay(3);// print session_setback
     
    // disengage break
     servo_break.attach(pinServo_break); 
