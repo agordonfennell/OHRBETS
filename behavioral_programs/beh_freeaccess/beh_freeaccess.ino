@@ -1,14 +1,14 @@
 /*
 -General notes--------------------------
 * This program is a spout training task, where each lick triggers a solenoid opdning
-* break is engaged, spout is extended, and multi-spout head is rotated at start of session
+* brake is engaged, spout is extended, and multi-spout head is rotated at start of session
 * spout is retracted at end of session
 * setup to accomidate setups with multiple spouts
   ~ see section spout / sol pins & parameters, fill out 1 element per spout on system
 
 -Dependencies---------------------------
 This program uses multiple dependencies (see protocol: for instructions on installation)
-* Servo.h: library used to control micro servos used for break / retractable spout 
+* Servo.h: library used to control micro servos used for brake / retractable spout 
 * Wire.h: library used for capacitive touch sensor
 * Adafuit_MPR121.h: library used for capacitive touch sensor
 
@@ -44,7 +44,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 // arduino pins ----------------------------------------------------------------------------
  // outputs ---------------------------
   static byte pinServo_retract = 9; 
-  static byte pinServo_break = 10;
+  static byte pinServo_brake = 10;
   static byte pinServo_radial = 11;
 
   // ttls for external time stamps
@@ -55,9 +55,9 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   uint16_t lasttouched = 0;
   uint16_t currtouched = 0;
 
-// servo break variables / parameters ------------------------------------------------------
-  Servo servo_break;  // create servo object to control a servo
-  static byte servo_break_engaged_deg = 15;
+// servo brake variables / parameters ------------------------------------------------------
+  Servo servo_brake;  // create servo object to control a servo
+  static byte servo_brake_engaged_deg = 15;
 
 // servo retractable spout variables / parameters ------------------------------------------
   Servo servo_retract;
@@ -92,7 +92,7 @@ void setup() {
  // define outputs
   pinMode(pinSol_ttl, OUTPUT);
   pinMode(pinServo_retract, OUTPUT);
-  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_brake, OUTPUT);  
   pinMode(pinServo_radial, OUTPUT); 
 
   for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++) { // for each solenoid
@@ -100,12 +100,12 @@ void setup() {
     pinMode(pinLickometer_ttl[i_sol], OUTPUT);           // 
   } 
 
- // engage servo break prior to session start
-  servo_break.attach(pinServo_break); 
+ // engage servo brake prior to session start
+  servo_brake.attach(pinServo_brake); 
   Serial.print(11); Serial.print(" "); Serial.println(ts);      
-  servo_break.write(servo_break_engaged_deg);
+  servo_brake.write(servo_brake_engaged_deg);
   delay(250);
-  servo_break.detach();
+  servo_brake.detach();
 
  // rotate multi-spout head prior to session start
   servo_radial.attach(pinServo_radial);
@@ -218,11 +218,11 @@ void loop() {
 /// functions & interupts_________________________________________________________________________________________________________________________________________________________
 /// end session -------------------------------------------------------------------------------------------
 void fun_end_session() {
-  servo_break.attach(pinServo_break);  
-  servo_break.write(servo_break_engaged_deg);
+  servo_brake.attach(pinServo_brake);  
+  servo_brake.write(servo_brake_engaged_deg);
   Serial.print(11); Serial.print(" "); Serial.println(ts);      
   delay(250);
-  servo_break.detach();  
+  servo_brake.detach();  
 
   servo_retract.attach(pinServo_retract);  
   servo_retract.write(servo_retract_retracted_deg);

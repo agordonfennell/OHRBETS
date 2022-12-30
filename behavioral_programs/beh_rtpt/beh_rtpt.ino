@@ -9,7 +9,7 @@
 
 -Dependencies---------------------------
 This program uses multiple dependencies (see protocol: for instructions on installation)
-* Servo.h: library used to control micro servos used for break / retractable spout 
+* Servo.h: library used to control micro servos used for brake / retractable spout 
 
 -Data structure-------------------------
 * see general arduino program approach for a description of how events and parameters are recorded
@@ -50,7 +50,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   
  // outputs ---------------------------
   static byte pinServo_retract = 9; 
-  static byte pinServo_break = 10;
+  static byte pinServo_brake = 10;
   static byte pinServo_radial = 11;
   static byte pinSpeaker = 12;
   
@@ -94,12 +94,12 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   uint8_t maskAB;
   volatile uint8_t *port;
 
-// servo break variables / parameters ------------------------------------------------------
-  Servo servo_break;  // create servo object to control a servo
-  static byte servo_break_engaged_deg = 20;
-  static byte servo_break_disengaged_deg = 0;
-  unsigned long detach_servo_break_ts = 0;
-  static int detach_servo_break_step = 100; // time in ms to allow for the servo to travel
+// servo brake variables / parameters ------------------------------------------------------
+  Servo servo_brake;  // create servo object to control a servo
+  static byte servo_brake_engaged_deg = 20;
+  static byte servo_brake_disengaged_deg = 0;
+  unsigned long detach_servo_brake_ts = 0;
+  static int detach_servo_brake_step = 100; // time in ms to allow for the servo to travel
 
 // servo retractable spout variables / parameters ------------------------------------------
   Servo servo_retract;
@@ -119,7 +119,7 @@ void setup() {
   
  // define outputs
   pinMode(pinServo_retract, OUTPUT);
-  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_brake, OUTPUT);  
   pinMode(pinServo_radial, OUTPUT); 
   pinMode(pinextTTL, OUTPUT);
   pinMode(pinSpeaker, OUTPUT);
@@ -147,12 +147,12 @@ void setup() {
    rotation_position = ppr_encoded/2 + 1; // start position is at 50% of end position 
   }
 
-// engage servo break prior to session start
-  servo_break.attach(pinServo_break); 
+// engage servo brake prior to session start
+  servo_brake.attach(pinServo_brake); 
   Serial.print(11); Serial.print(" "); Serial.println(ts);      
-  servo_break.write(servo_break_engaged_deg);
+  servo_brake.write(servo_brake_engaged_deg);
   delay(250);
-  servo_break.detach();
+  servo_brake.detach();
 
 // rotate multi-spout head prior to session start
   servo_radial.attach(pinServo_radial);
@@ -183,10 +183,10 @@ void loop() {
   // generate timestamp 
   ts=millis()-ts_start;
 
- // detach break servo ---------------------------
-  if(ts >= detach_servo_break_ts && detach_servo_break_ts!=0){
-    servo_break.detach();
-    detach_servo_break_ts = 0;
+ // detach brake servo ---------------------------
+  if(ts >= detach_servo_brake_ts && detach_servo_brake_ts!=0){
+    servo_brake.detach();
+    detach_servo_brake_ts = 0;
   }
  
   // session initialization (runs once at start) -----------------------------------------------------------------
@@ -206,11 +206,11 @@ void loop() {
     
    if(session_tone){tone(pinSpeaker, tone_freq_initially_unpaired);} // start in unpaired side
     
-   // disengage break
-    servo_break.attach(pinServo_break); 
+   // disengage brake
+    servo_brake.attach(pinServo_brake); 
     Serial.print(12); Serial.print(" "); Serial.println(ts);      
-    servo_break.write(servo_break_disengaged_deg);
-    detach_servo_break_ts = ts + detach_servo_break_step;
+    servo_brake.write(servo_brake_disengaged_deg);
+    detach_servo_brake_ts = ts + detach_servo_brake_step;
     
     session_end_ts = ts + session_duration;
   }
@@ -386,10 +386,10 @@ void fpinRotaryEncoderA(){
 
 /// end session -------------------------------------------------------------------------------------------
 void fun_end_session() {
-  servo_break.attach(pinServo_break);  
-  servo_break.write(servo_break_engaged_deg);  
+  servo_brake.attach(pinServo_brake);  
+  servo_brake.write(servo_brake_engaged_deg);  
   delay(250);
-  servo_break.detach();    
+  servo_brake.detach();    
 
   if(session_tone){noTone(pinSpeaker);}
   

@@ -8,7 +8,7 @@
 
 -Dependencies---------------------------
 This program uses multiple dependencies (see protocol: for instructions on installation)
-* Servo.h: library used to control micro servos used for break / retractable spout 
+* Servo.h: library used to control micro servos used for brake / retractable spout 
 * Wire.h: library used for capacitive touch sensor
 * Adafuit_MPR121.h: library used for capacitive touch sensor
 
@@ -71,7 +71,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   
  // outputs--
   static byte pinServo_retract = 37;
-  static byte pinServo_break = 39;
+  static byte pinServo_brake = 39;
   static byte pinServo_radial = 41;
   static byte pinSpeaker = 12;
   
@@ -88,9 +88,9 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   uint16_t lasttouched = 0;
   uint16_t currtouched = 0;
   
- // servo break variables / parameters ------------------------------------------------------
-  Servo servo_break;  // create servo object to control a servo
-  static byte servo_break_engaged_deg = 15;
+ // servo brake variables / parameters ------------------------------------------------------
+  Servo servo_brake;  // create servo object to control a servo
+  static byte servo_brake_engaged_deg = 15;
   
  // servo retractable spout variables / parameters ------------------------------------------
   Servo servo_retract;
@@ -131,7 +131,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long ts_sol_ttl_off;
   unsigned long ts_lickomter_ttl_off;
   
-  volatile unsigned long break_spout_delay; // random delay length between break and access period
+  volatile unsigned long brake_spout_delay; // random delay length between brake and access period
   
   unsigned long session_end_ts;
   
@@ -153,7 +153,7 @@ void setup() {
   pinMode(pinSol_ttl, OUTPUT);
   pinMode(pinTrial_ttl, OUTPUT);
   pinMode(pinServo_retract, OUTPUT);
-  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_brake, OUTPUT);  
   pinMode(pinServo_radial, OUTPUT); 
   
   
@@ -162,12 +162,12 @@ void setup() {
     pinMode(pinLickometer_ttl[i_sol], OUTPUT);           // 
   } 
 
-  // engage servo break prior to session start
-  servo_break.attach(pinServo_break);
+  // engage servo brake prior to session start
+  servo_brake.attach(pinServo_brake);
   Serial.print(11); Serial.print(" "); Serial.println(ts);
-  servo_break.write(servo_break_engaged_deg);
+  servo_brake.write(servo_brake_engaged_deg);
   delay(100);
-  servo_break.detach();
+  servo_brake.detach();
 
   // set initial spout position
   servo_radial.attach(pinServo_radial);
@@ -433,7 +433,7 @@ void loop() {
 // _______________________________________________________________________________________________________________________________________________________________________________
 /// functions ____________________________________________________________________________________________________________________________________________________________________
 void spout_update() {
-  // break
+  // brake
   if (toggle_spout_update && count_trial < trial_count) {
     if (initiate_spout_seq) { // if sequence has been initiated and not in access period
       move_servo_retract_retracted_ts = ts + detach_servo_retract_step;

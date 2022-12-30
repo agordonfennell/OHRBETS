@@ -33,7 +33,7 @@ Instructions (see protocol_helper_opensol for step by step instructions):
  // Pins
   static byte pinSol[]   = {4,5,6,7,8}; // one pin per solenoid
   static byte pinServo_retract = 9; 
-  static byte pinServo_break = 10;
+  static byte pinServo_brake = 10;
   static byte pinServo_radial = 11;
 
  // variables
@@ -50,9 +50,9 @@ Instructions (see protocol_helper_opensol for step by step instructions):
     static byte servo_retract_retracted_deg = 120;
     
   
-   // servo break variables / parameters ------------------------------------------------------
-    Servo servo_break;  // create servo object to control a servo
-    static byte servo_break_engaged_deg = 13;
+   // servo brake variables / parameters ------------------------------------------------------
+    Servo servo_brake;  // create servo object to control a servo
+    static byte servo_brake_engaged_deg = 13;
   
    // servo radial  ---------------------------------------------------------------------------
     Servo servo_radial;
@@ -74,7 +74,7 @@ void setup() { //---------------------------------------------------------------
   }
   
   pinMode(pinServo_retract, OUTPUT);
-  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_brake, OUTPUT);  
   pinMode(pinServo_radial, OUTPUT);  
   
 
@@ -93,11 +93,11 @@ void setup() { //---------------------------------------------------------------
     delay(250);
     servo_retract.detach();
   
-   // break
-    servo_break.attach(pinServo_break);
-    servo_break.write(servo_break_engaged_deg);
+   // brake
+    servo_brake.attach(pinServo_brake);
+    servo_brake.write(servo_brake_engaged_deg);
     delay(250);
-    servo_break.detach();
+    servo_brake.detach();
 
    // radial
     servo_radial.attach(pinServo_radial);

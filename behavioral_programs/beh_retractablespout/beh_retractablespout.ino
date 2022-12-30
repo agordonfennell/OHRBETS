@@ -1,7 +1,7 @@
 /*
 -General notes--------------------------
 * This program is a retractable spout trianing & pavlovian conditioning task
-* break is engaged, spout is extended, and multi-spout head is rotated at start of session
+* brake is engaged, spout is extended, and multi-spout head is rotated at start of session
 * set number of trials consisting of
   - tone (optional)
   - spout extension for set period of time then retraction (optional)
@@ -13,7 +13,7 @@
 
 -Dependencies---------------------------
 This program uses multiple dependencies (see protocol: for instructions on installation)
-* Servo.h: library used to control micro servos used for break / retractable spout 
+* Servo.h: library used to control micro servos used for brake / retractable spout 
 * Wire.h: library used for capacitive touch sensor
 * Adafuit_MPR121.h: library used for capacitive touch sensor
 
@@ -68,7 +68,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 // arduino pins ----------------------------------------------------------------------------
  // outputs ---------------------------
   static byte pinServo_retract = 9; 
-  static byte pinServo_break = 10;
+  static byte pinServo_brake = 10;
   static byte pinServo_radial = 11;
   static byte pinSpeaker = 12;  
 
@@ -82,11 +82,11 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   uint16_t currtouched = 0;
   // note: code is setup to use sensor position 1
 
-// servo break variables / parameters ------------------------------------------------------
-  Servo servo_break;  // create servo object to control a servo
-  static byte servo_break_engaged_deg = 15;
-  static byte servo_break_disengaged_deg = 0;
-  static int detach_servo_break_step = 100; // time in ms to allow for the servo to travel
+// servo brake variables / parameters ------------------------------------------------------
+  Servo servo_brake;  // create servo object to control a servo
+  static byte servo_brake_engaged_deg = 15;
+  static byte servo_brake_disengaged_deg = 0;
+  static int detach_servo_brake_step = 100; // time in ms to allow for the servo to travel
 
 // servo retractable spout variables / parameters ------------------------------------------
   Servo servo_retract;
@@ -125,7 +125,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   boolean flag_access_complete;
   boolean flag_tone_complete;
 
-  volatile unsigned long break_spout_delay; // random delay length between break and access period
+  volatile unsigned long brake_spout_delay; // random delay length between brake and access period
   
   unsigned long session_end_ts;
 
@@ -143,7 +143,7 @@ void setup() {
   pinMode(pinSol_ttl, OUTPUT);
   pinMode(pinTone_ttl, OUTPUT);
   pinMode(pinServo_retract, OUTPUT);
-  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_brake, OUTPUT);  
   pinMode(pinServo_radial, OUTPUT); 
   pinMode(pinSpeaker, OUTPUT);
 
@@ -152,12 +152,12 @@ void setup() {
     pinMode(pinLickometer_ttl[i_sol], OUTPUT);           // 
   } 
 
- // engage servo break prior to session start
-  servo_break.attach(pinServo_break); 
+ // engage servo brake prior to session start
+  servo_brake.attach(pinServo_brake); 
   Serial.print(11); Serial.print(" "); Serial.println(ts);      
-  servo_break.write(servo_break_engaged_deg);
+  servo_brake.write(servo_brake_engaged_deg);
   delay(250);
-  servo_break.detach();
+  servo_brake.detach();
 
  // rotate multi-spout head prior to session start
   servo_radial.attach(pinServo_radial);
@@ -384,11 +384,11 @@ void fun_servo_retract_retracted(){ //------------------------------------
 
 /// end session -------------------------------------------------------------------------------------------
 void fun_end_session() {
-  servo_break.attach(pinServo_break);  
-  servo_break.write(servo_break_engaged_deg);
+  servo_brake.attach(pinServo_brake);  
+  servo_brake.write(servo_brake_engaged_deg);
   Serial.print(11); Serial.print(" "); Serial.println(ts);   
   delay(250);
-  servo_break.detach();    
+  servo_brake.detach();    
 
   servo_retract.attach(pinServo_retract);  
   servo_retract.write(servo_retract_retracted_deg);

@@ -36,7 +36,7 @@ void loop() {
       delay(500);
       
       Serial.println("");
-      Serial.println("send new break angle (0-180) over serial...");
+      Serial.println("send new servo angle (0-180) over serial...");
       
       if(servo_angle > 180){
         Serial.println("error in servo_angle input: value must be less than or equal to 180");

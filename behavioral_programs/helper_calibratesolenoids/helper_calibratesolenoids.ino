@@ -7,19 +7,19 @@
   
   static byte servo_radial_deg = 180; // multi-spout radial head position
   static byte servo_retract_retracted_deg = 120; // retractable spout position
-  static byte servo_break_engaged_deg = 13; // break position
+  static byte servo_brake_engaged_deg = 13; // brake position
   
  // ***********************************************************************************************************
  
  // inputs
   static byte pinServo_retract = 9; 
-  static byte pinServo_break = 10;
+  static byte pinServo_brake = 10;
   static byte pinServo_radial = 11;
   
 
  // servos 
   Servo servo_retract;
-  Servo servo_break; 
+  Servo servo_brake; 
   Servo servo_radial;
 
  // variables
@@ -44,11 +44,11 @@ void setup() {
     delay(250);
     servo_retract.detach();
   
-   // break
-    servo_break.attach(pinServo_break);
-    servo_break.write(servo_break_engaged_deg);
+   // brake
+    servo_brake.attach(pinServo_brake);
+    servo_brake.write(servo_brake_engaged_deg);
     delay(250);
-    servo_break.detach();
+    servo_brake.detach();
 
    // radial
     servo_radial.attach(pinServo_radial);
@@ -66,7 +66,7 @@ void setup() {
   // put your setup code here, to run once:
   pinMode(pinSol, OUTPUT);
   pinMode(pinServo_retract, OUTPUT);
-  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_brake, OUTPUT);  
   pinMode(pinServo_radial, OUTPUT);  
 
 

@@ -3,7 +3,7 @@
 * This program is an operant task with multiple schedule and reinforcement options
 * The ratio or reinforcement can be either fixed or progressive
 * The reinforcer can be either liquid reward (1 or more solenoid openings) or extTTL stimulation (on or off)
-* This program includes an optional break control to limit the subjects ability to make operant responses
+* This program includes an optional brake control to limit the subjects ability to make operant responses
 * This program includes an optional retractable spout to limit the subjects ability to make consumitory responses
 * Solenoid sequence onset starts with spout extension
 * access period and solenoid  opening are independent
@@ -18,7 +18,7 @@
 
 -Dependencies---------------------------
 This program uses multiple dependencies (see protocol: for instructions on installation)
-* Servo.h: library used to control micro servos used for break / retractable spout 
+* Servo.h: library used to control micro servos used for brake / retractable spout 
 * Wire.h: library used for capacitive touch sensor
 * Adafuit_MPR121.h: library used for capacitive touch sensor
 
@@ -39,8 +39,8 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 // session parameters *************************************************************************************************************
  // general parameters -------
   static unsigned long session_duration = 1800000; // session duration (ms) (note: avoid using formula here)
-  static boolean session_break = 1;            // 0: no break during access period, 1: break engaged during access period
-  static boolean inactive_break = 1;           // 0: no break following inactive response, 1: break for equivalent time to active response
+  static boolean session_brake = 1;            // 0: no brake during access period, 1: brake engaged during access period
+  static boolean inactive_brake = 1;           // 0: no brake following inactive response, 1: brake for equivalent time to active response
   static boolean session_retract = 1;          // 0: no retractable spout, 1: retractable spout
   boolean session_contingency_current = 0;     // 0: right = active, 1: left = active
   boolean session_reinforcer_availability = 0; // 0: availible, 1: not availible
@@ -78,10 +78,10 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static unsigned long pr_timeout = 600000; // amount of time wihtout a response before session ends (ms)
 
  // pre access delay ---------
-  static unsigned long break_delay = 250;         // minimum delay from break onset to access period start (allows for break to fully engage)
+  static unsigned long brake_delay = 250;         // minimum delay from brake onset to access period start (allows for brake to fully engage)
   
-  static unsigned long break_to_access_delay_min = 3000; // minimum delay after break engages before access period start
-  static unsigned long break_to_access_delay_max = 3000; // maximum delay after break engages before access period start
+  static unsigned long brake_to_access_delay_min = 3000; // minimum delay after brake engages before access period start
+  static unsigned long brake_to_access_delay_max = 3000; // maximum delay after brake engages before access period start
  
  // access & solenoid --------
   static int access_time = 3000;          // total time before spout is extended
@@ -98,8 +98,8 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static unsigned long tone_freq = 5000;  // tone played during access period / extTTL period (Hz)
   static int tone_duration = 2000;        // tone duration (ms)
   
-  static unsigned long break_to_tone_delay_min = 0;   // minimum delay after break engages before tone start
-  static unsigned long break_to_tone_delay_max = 0;   // maximum delay after break engages before tone start
+  static unsigned long brake_to_tone_delay_min = 0;   // minimum delay after brake engages before tone start
+  static unsigned long brake_to_tone_delay_max = 0;   // maximum delay after brake engages before tone start
   
 
 // arduino pins ----------------------------------------------------------------------------
@@ -109,7 +109,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   
  // outputs ---------------------------
   static byte pinServo_retract = 9; 
-  static byte pinServo_break = 10;
+  static byte pinServo_brake = 10;
   static byte pinServo_radial = 11;
   static byte pinSpeaker = 12;
 
@@ -124,12 +124,12 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   uint16_t currtouched = 0;
   // note: code is setup to use sensor position 1
 
-// servo break variables / parameters ------------------------------------------------------
-  Servo servo_break;  // create servo object to control a servo
-  static byte servo_break_engaged_deg = 15;
-  static byte servo_break_disengaged_deg = 0;
-  unsigned long detach_servo_break_ts = 0;
-  static int detach_servo_break_step = 100; // time in ms to allow for the servo to travel
+// servo brake variables / parameters ------------------------------------------------------
+  Servo servo_brake;  // create servo object to control a servo
+  static byte servo_brake_engaged_deg = 15;
+  static byte servo_brake_disengaged_deg = 0;
+  unsigned long detach_servo_brake_ts = 0;
+  static int detach_servo_brake_step = 100; // time in ms to allow for the servo to travel
 
 // servo retractable spout variables / parameters ------------------------------------------
   Servo servo_retract;
@@ -166,7 +166,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   boolean solOpen;
   boolean frame;
   boolean lick;
-  boolean rotation_gate = 1; // used to gate rotation relative to break engagement
+  boolean rotation_gate = 1; // used to gate rotation relative to brake engagement
 
 // counters ---------------------------------------------------------------------------------
  // variables---
@@ -192,8 +192,8 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static unsigned long tm_switch_contingency;         
   static unsigned long tm_switch_reinforcer_availability; 
 
-  volatile unsigned long break_access_delay; // random delay length between break and access period
-  volatile unsigned long break_tone_delay;   // random delay length between break and tone
+  volatile unsigned long brake_access_delay; // random delay length between brake and access period
+  volatile unsigned long brake_tone_delay;   // random delay length between brake and tone
   
   unsigned long session_end_ts;
 
@@ -213,7 +213,7 @@ void setup() {
   
  // define outputs
   pinMode(pinServo_retract, OUTPUT);
-  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_brake, OUTPUT);  
   pinMode(pinServo_radial, OUTPUT); 
   
   for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++) { // for each solenoid
@@ -241,12 +241,12 @@ void setup() {
   maskAB = maskA | maskB;
   port = portInputRegister(digitalPinToPort(pinRotaryEncoderA));
 
-// engage servo break prior to session start
-  servo_break.attach(pinServo_break); 
+// engage servo brake prior to session start
+  servo_brake.attach(pinServo_brake); 
   Serial.print(11); Serial.print(" "); Serial.println(ts);      
-  servo_break.write(servo_break_engaged_deg);
+  servo_brake.write(servo_brake_engaged_deg);
   delay(250);
-  servo_break.detach();
+  servo_brake.detach();
 
  // rotate multi-spout head prior to session start
   servo_radial.attach(pinServo_radial);
@@ -290,10 +290,10 @@ void loop() {
  // generate timestamp ---------------------------
   ts=millis()-ts_start;
 
- // detach break servo ---------------------------
-  if(ts >= detach_servo_break_ts && detach_servo_break_ts!=0){
-    servo_break.detach();
-    detach_servo_break_ts = 0;
+ // detach brake servo ---------------------------
+  if(ts >= detach_servo_brake_ts && detach_servo_brake_ts!=0){
+    servo_brake.detach();
+    detach_servo_brake_ts = 0;
   }
 
  // detach spout servo ---------------------------
@@ -339,18 +339,18 @@ void loop() {
     Serial.print(1);   Serial.print(" "); Serial.println(ts);                          delay(3);// print start session
     Serial.print(100); Serial.print(" "); Serial.println(session_duration);            delay(3);// print session duration
     Serial.print(101); Serial.print(" "); Serial.println(rotary_resoltion);            delay(3);// print rotary_resoltion
-    Serial.print(103); Serial.print(" "); Serial.println(session_break);               delay(3);// print session_break
+    Serial.print(103); Serial.print(" "); Serial.println(session_brake);               delay(3);// print session_brake
     Serial.print(104); Serial.print(" "); Serial.println(session_retract);             delay(3);// print session_retract
     Serial.print(107); Serial.print(" "); Serial.println(session_reinforcer);          delay(3);// print session_reinforcer
     Serial.print(108); Serial.print(" "); Serial.println(extTTL_posneg);               delay(3);// print extTTL_posneg
     Serial.print(109); Serial.print(" "); Serial.println(schedule);                    delay(3);// print schedule
     Serial.print(110); Serial.print(" "); Serial.println(pr_step);                     delay(3);// print pr_step
     Serial.print(111); Serial.print(" "); Serial.println(pr_function);                 delay(3);// print pr_function
-    Serial.print(112); Serial.print(" "); Serial.println(break_delay);                 delay(3);// print break_delay
-    Serial.print(113); Serial.print(" "); Serial.println(break_to_access_delay_min);   delay(3);// print break_to_access_delay_min
-    Serial.print(114); Serial.print(" "); Serial.println(break_to_access_delay_max);   delay(3);// print break_to_access_delay_max
-    Serial.print(140); Serial.print(" "); Serial.println(break_to_tone_delay_min);     delay(3);// print break_to_tone_delay_min
-    Serial.print(141); Serial.print(" "); Serial.println(break_to_tone_delay_max);     delay(3);// print break_to_tone_delay_max
+    Serial.print(112); Serial.print(" "); Serial.println(brake_delay);                 delay(3);// print brake_delay
+    Serial.print(113); Serial.print(" "); Serial.println(brake_to_access_delay_min);   delay(3);// print brake_to_access_delay_min
+    Serial.print(114); Serial.print(" "); Serial.println(brake_to_access_delay_max);   delay(3);// print brake_to_access_delay_max
+    Serial.print(140); Serial.print(" "); Serial.println(brake_to_tone_delay_min);     delay(3);// print brake_to_tone_delay_min
+    Serial.print(141); Serial.print(" "); Serial.println(brake_to_tone_delay_max);     delay(3);// print brake_to_tone_delay_max
     Serial.print(115); Serial.print(" "); Serial.println(access_time);                 delay(3);// print access_time
     Serial.print(117); Serial.print(" "); Serial.println(num_sol);                     delay(3);// print num_sol
     Serial.print(118); Serial.print(" "); Serial.println(inter_sol_time);              delay(3);// print inter_sol_time
@@ -362,12 +362,12 @@ void loop() {
     Serial.print(125); Serial.print(" "); Serial.println(tm_switch_reinforcer_availability_step);   delay(3);// print tm_switch_reinforcer_availability_step
     Serial.print(126); Serial.print(" "); Serial.println(session_setback);             delay(3);// print session_setback
     
-   // disengage break
-    servo_break.attach(pinServo_break); 
+   // disengage brake
+    servo_brake.attach(pinServo_brake); 
     Serial.print(12); Serial.print(" "); Serial.println(ts);      
-    servo_break.write(servo_break_disengaged_deg);
+    servo_brake.write(servo_brake_disengaged_deg);
     delay(250); 
-    servo_break.detach();
+    servo_brake.detach();
     
    // retract spout
     if(session_retract){ 
@@ -492,7 +492,7 @@ void loop() {
       
       } else { // if rotation gate is closed (during access period or time out)
         
-        Serial.print(83); Serial.print(" "); Serial.println(ts); // print active rotation reaching criteria during breaked or non reinforced periods
+        Serial.print(83); Serial.print(" "); Serial.println(ts); // print active rotation reaching criteria during brakeed or non reinforced periods
         
       }
       rotation_active_counter_trial = 0; // reset rotation counter to close if statement
@@ -524,7 +524,7 @@ void loop() {
       
      } else { // if rotation gate is closed (during access period or time out)
       
-      Serial.print(73); Serial.print(" "); Serial.println(ts); // print inactive rotation during breaked or non reinforced periods
+      Serial.print(73); Serial.print(" "); Serial.println(ts); // print inactive rotation during brakeed or non reinforced periods
      }
      rotation_inactive_counter_trial = 0; // reset rotation counter to close if statement
    }
@@ -537,14 +537,14 @@ void loop() {
       // initialize access period-----
       if(ts_access_start == 0 && ts_to_end == 0){ 
         Serial.print(82); Serial.print(" "); Serial.println(ts);    // print reached criteria
-        if(session_break){fun_servo_break_engage();}                // engage break
+        if(session_brake){fun_servo_brake_engage();}                // engage brake
         rotation_gate = 0;                                          // close rotation gate
         
-        break_access_delay = random(break_to_access_delay_min, break_to_access_delay_max);         // calculate random delay
-        ts_access_start = ts + break_delay + break_access_delay; // set access start time 
+        brake_access_delay = random(brake_to_access_delay_min, brake_to_access_delay_max);         // calculate random delay
+        ts_access_start = ts + brake_delay + brake_access_delay; // set access start time 
         
-        break_tone_delay = random(break_to_tone_delay_min, break_to_tone_delay_max);           // calculate random delay
-        ts_tone_start = ts + break_delay + break_tone_delay; // set access start time 
+        brake_tone_delay = random(brake_to_tone_delay_min, brake_to_tone_delay_max);           // calculate random delay
+        ts_tone_start = ts + brake_delay + brake_tone_delay; // set access start time 
         
       // increase ratio if pr
       if(schedule == 1){ // if pr
@@ -609,7 +609,7 @@ void loop() {
         rotation_inactive = 0;
         rotation_inactive_counter_trial = 0;
 
-        if(session_break){fun_servo_break_disengage();}     // disengage break 
+        if(session_brake){fun_servo_brake_disengage();}     // disengage brake 
         rotation_gate = 1; // open rotation gate
         ts_to_end = 0;     // reset end of to time to close if statement
       }
@@ -622,15 +622,15 @@ void loop() {
   if (rotation_active >= current_ratio) { // once down sampled rotation count reaches fixed ratio
      // initialize access period-----
       if(ts_access_start == 0 && ts_to_end == 0){ 
-        if(session_break){fun_servo_break_engage();}                // engage break
+        if(session_brake){fun_servo_brake_engage();}                // engage brake
         rotation_gate = 0;                                          // close rotation gate
         Serial.print(82); Serial.print(" "); Serial.println(ts);    // print reached criteria
         
-        break_access_delay = random(break_to_access_delay_min, break_to_access_delay_max);           // calculate random delay
-        ts_access_start = ts + break_delay + break_access_delay; // set access start time
+        brake_access_delay = random(brake_to_access_delay_min, brake_to_access_delay_max);           // calculate random delay
+        ts_access_start = ts + brake_delay + brake_access_delay; // set access start time
 
-        break_tone_delay = random(break_to_access_delay_min, break_to_access_delay_max);           // calculate random delay
-        ts_tone_start = ts + break_delay + break_tone_delay; // set access start time 
+        brake_tone_delay = random(brake_to_access_delay_min, brake_to_access_delay_max);           // calculate random delay
+        ts_tone_start = ts + brake_delay + brake_tone_delay; // set access start time 
         
         // increase ratio if pr
         if(schedule == 1){ // if pr
@@ -653,7 +653,7 @@ void loop() {
         ts_tone_start = 0;
       }
       
-     // start breaked period and change extTTL state--
+     // start brakeed period and change extTTL state--
       if(ts >= ts_access_start && ts_access_start != 0){
         ts_access_start = 0;
 
@@ -671,7 +671,7 @@ void loop() {
         ts_to_end = ts_extTTL_offset + duration_additional_to;                   // set end of to time
       }
 
-     // change extTTL state & end breaked peroid---
+     // change extTTL state & end brakeed peroid---
       if(ts >= ts_extTTL_offset && ts_extTTL_offset != 0){
         ts_extTTL_offset = 0; 
         
@@ -693,7 +693,7 @@ void loop() {
         rotation_inactive = 0;
         rotation_inactive_counter_trial = 0;
 
-        if(session_break){fun_servo_break_disengage();}     // disengage break  
+        if(session_brake){fun_servo_brake_disengage();}     // disengage brake  
         rotation_gate = 1;
         ts_to_end = 0;
       }
@@ -702,13 +702,13 @@ void loop() {
 
  // Inactive criteria --------------------------------------------------------------------------
   if (rotation_inactive >= current_ratio) {
-    //break inactive direction for as long as active direction but without tone or reward
-      if(inactive_break){
+    //brake inactive direction for as long as active direction but without tone or reward
+      if(inactive_brake){
         if(ts_to_end == 0){
           rotation_gate = 0;                       // close rotation gate
           Serial.print(72); Serial.print(" "); Serial.println(ts); // print stim/tone onset
-          fun_servo_break_engage();                // engage break
-          ts_to_end = ts + break_delay + access_time + duration_additional_to;
+          fun_servo_brake_engage();                // engage brake
+          ts_to_end = ts + brake_delay + access_time + duration_additional_to;
         }
 
         if(ts > ts_to_end && ts_to_end != 0){
@@ -719,7 +719,7 @@ void loop() {
           rotation_inactive = 0;
           rotation_inactive_counter_trial = 0;
   
-          fun_servo_break_disengage();     // disengage break 
+          fun_servo_brake_disengage();     // disengage brake 
           rotation_gate = 1; // open rotation gate
           ts_to_end = 0;     // reset end of to time to close if statement
           rotation_inactive=0;
@@ -778,18 +778,18 @@ void fpinRotaryEncoderA(){ //---------------------------------------------
 }
 
 // servos ----------------------------------------------------------------
-void fun_servo_break_engage(){ //-----------------------------------------
-  servo_break.attach(pinServo_break);  
-  servo_break.write(servo_break_engaged_deg);
+void fun_servo_brake_engage(){ //-----------------------------------------
+  servo_brake.attach(pinServo_brake);  
+  servo_brake.write(servo_brake_engaged_deg);
   Serial.print(11); Serial.print(" "); Serial.println(ts);            
-  detach_servo_break_ts = ts + detach_servo_break_step;
+  detach_servo_brake_ts = ts + detach_servo_brake_step;
 }
 
-void fun_servo_break_disengage(){ //--------------------------------------
-  servo_break.attach(pinServo_break);  
-  servo_break.write(servo_break_disengaged_deg);
+void fun_servo_brake_disengage(){ //--------------------------------------
+  servo_brake.attach(pinServo_brake);  
+  servo_brake.write(servo_brake_disengaged_deg);
   Serial.print(12); Serial.print(" "); Serial.println(ts);            
-  detach_servo_break_ts = ts + detach_servo_break_step;
+  detach_servo_brake_ts = ts + detach_servo_brake_step;
 }
 
 void fun_servo_retract_extended(){ //-------------------------------------
@@ -808,11 +808,11 @@ void fun_servo_retract_retracted(){ //------------------------------------
 
 /// end session -------------------------------------------------------------------------------------------
 void fun_end_session() {
-  servo_break.attach(pinServo_break);  
-  servo_break.write(servo_break_engaged_deg);
+  servo_brake.attach(pinServo_brake);  
+  servo_brake.write(servo_brake_engaged_deg);
   Serial.print(11); Serial.print(" "); Serial.println(ts);   
   delay(250);
-  servo_break.detach();    
+  servo_brake.detach();    
 
   servo_retract.attach(pinServo_retract);  
   servo_retract.write(servo_retract_retracted_deg);

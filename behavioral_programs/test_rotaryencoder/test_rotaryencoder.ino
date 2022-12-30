@@ -17,12 +17,12 @@
   
  // outputs ---------------------------
   static byte pinServo_retract = 9; 
-  static byte pinServo_break = 10;
+  static byte pinServo_brake = 10;
   static byte pinServo_radial = 11;
   
-// servo break variables / parameters ------------------------------------------------------
-  Servo servo_break;  // create servo object to control a servo
-  static byte servo_break_disengaged_deg = 0;
+// servo brake variables / parameters ------------------------------------------------------
+  Servo servo_brake;  // create servo object to control a servo
+  static byte servo_brake_disengaged_deg = 0;
 
 // servo retractable spout variables / parameters ------------------------------------------
   Servo servo_retract;
@@ -62,7 +62,7 @@ void setup() {
   
  // define outputs
   pinMode(pinServo_retract, OUTPUT);
-  pinMode(pinServo_break, OUTPUT);  
+  pinMode(pinServo_brake, OUTPUT);  
   pinMode(pinServo_radial, OUTPUT); 
 
  // rotary encoder ------------------------------
@@ -76,11 +76,11 @@ void setup() {
   maskAB = maskA | maskB;
   port = portInputRegister(digitalPinToPort(pinRotaryEncoderA));
 
-// engage servo break prior to session start
-  servo_break.attach(pinServo_break);    
-  servo_break.write(servo_break_disengaged_deg);
+// engage servo brake prior to session start
+  servo_brake.attach(pinServo_brake);    
+  servo_brake.write(servo_brake_disengaged_deg);
   delay(250);
-  servo_break.detach();
+  servo_brake.detach();
 
  // rotate multi-spout head prior to session start
   servo_radial.attach(pinServo_radial);
