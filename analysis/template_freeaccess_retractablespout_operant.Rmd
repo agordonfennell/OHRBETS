@@ -1,0 +1,414 @@
+---
+title: "headfixed_rotary_operant_ratio_extraction"
+author: "adam gordon-fennell"
+date: "04/16/2021"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    toc_depth: 4
+---
+
+
+
+
+# setup
+## kniter
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = TRUE)
+```
+
+## libraries
+```{r, echo = TRUE}
+library(tidyverse)
+library(viridis)
+library(lubridate)
+library(janitor)
+library(feather) # if using feather format
+library(ggh4x) # force_panelsizes
+library(ggbeeswarm)
+library(afex) # aov
+library(emmeans) # posthoc
+library(patchwork) 
+```
+
+## sources
+```{r}
+dir_source <- './functions/'
+
+source_files <- c('r_general.R', 'r_head_fixed_processing.R', 'r_head_fixed_plots.R')
+
+source_functions <- function(){
+  for(source_file in source_files){
+    source(str_c(dir_source, source_file))
+    }
+}
+
+source_functions()
+```
+
+# extract and pre process data data
+## setup
+```{r, echo = TRUE}
+# directories 
+dir_raw <- './example_data/raw/'
+dir_extraction <- './example_data/extracted/'
+dir_processed <- './example_data/processed/'
+dir_analysis <- './example_data/analysis/'
+
+# file format ('csv', or 'feather')
+file_format_output <- 'csv'
+
+# data logs and keys
+log_data <- read_csv('log_data.csv', na = 'NA', col_types = cols()) %>%
+  mutate(date = mdy(date))
+log_multi_spout_ids <-  read_csv('log_multi_spout_ids.csv', na = 'NA', col_types = cols())
+key_events <-  read_csv('key_events.csv',na = 'NA',  col_types = cols())
+```
+
+## extract and tidy data
+```{r}
+# Universal extraction and tidying script
+extract_serial_output(
+  dir_raw,                       # directory of the raw csv output from the arduino
+  key_events,                    # key for decoding raw data
+  dir_extraction,                # directory for the tidy datasets to be saved to
+  manual_experiments = c('aar'), # optional- experiment string to process a single experiment
+  manual_blocknames = NA,        # optional- use a vector of strings to specify individual sessions to process 
+  file_format_output,            # file format (csv or feather)
+  overwrite = 0                  # 0: only process new files in dir_raw, 1: process all files found in dir_raw and overwrite data in dir_extraction
+  )
+```
+
+
+## pre processing
+```{r, messages = FALSE}
+# Pre processing for multi-spout data (not universal)
+
+# setup files to process
+manual_fns <- log_data %>%
+  filter(experiment == 'aar') %>%
+  pull(blockname)
+
+# pre process raw data
+process_arduino_generic(
+  dir_extraction, 
+  dir_processed, 
+  log_data,
+  key_events,
+  file_format_output = 'csv',
+  manual_fns = NA,
+  wheel_diameter = 63,
+  overwrite = 0)
+```
+
+# free-access training
+## import data
+```{r}
+blocknames <- log_data %>%
+  filter(procedure == 'fa_suc10') %>%
+  pull(blockname)
+
+data_list <- combined_import(import_directory = dir_processed,
+                             filter_strings = blocknames,
+                             prefixes = NA,
+                             suffixes = c('_data_event.csv', '_data_summary.csv')
+                             )
+
+data_lick_fa         <- data_list[[1]] %>% left_join(log_data)     
+data_lick_fa_summary <- data_list[[2]] %>% left_join(log_data)     
+```
+
+
+## plots
+```{r, fig.height = 3, fig.width = 9}
+data_lick_fa %>%
+  ggplot(aes(event_ts, subject, color = subject)) +
+  theme_ag01() +
+  geom_point() 
+```
+
+```{r, fig.height = 3, fig.width = 3}
+data_lick_fa_summary %>%
+  filter(event_id_char == 'lick') %>%
+  ggplot() +
+  geom_jitter(aes(1, event_count, color = subject), size = 2, stroke = 0.5, shape = 21, fill = NA) +
+  geom_boxplot(aes(2, event_count), outlier.shape = NA, width = 0.5) +
+  theme_ag01() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.line.x=element_blank()) +
+  ylab('Total Lick Count') 
+
+```
+
+# retractable spout training
+## import data
+```{r}
+blocknames <- log_data %>%
+  filter(procedure == 'training_mag') %>%
+  pull(blockname)
+
+data_list <- combined_import(import_directory = dir_processed,
+                             filter_strings = blocknames,
+                             prefixes = NA,
+                             suffixes = c('_data_event.csv', '_data_summary.csv')
+                             )
+
+data_lick_mag         <- data_list[[1]] %>% left_join(log_data)     
+data_lick_mag_summary <- data_list[[2]] %>% left_join(log_data)     
+```
+
+## process data
+```{r, echo = TRUE}
+# join delivery_number
+data_lick_mag <- data_lick_mag %>%
+  filter(event_id_char %in% c('lick', 'spout_extended', 'spout_retracted')) %>%
+  filter(event_id_char == 'spout_extended') %>%
+  group_by(subject, day) %>%
+  arrange(subject, day, event_ts) %>%
+  mutate(delivery_number = row_number()) %>%
+  ungroup() %>%
+  select(subject, day, event_ts, event_id, delivery_number) %>%
+  left_join(data_lick_mag,., by = c('subject', 'day', 'event_ts', 'event_id'))
+
+data_lick_mag <- data_lick_mag %>%
+  group_by(subject, day) %>%
+  arrange(subject, day, event_ts) %>%
+  fill(delivery_number, .direction = 'down') %>%
+  ungroup()
+
+data_lick_mag <- data_lick_mag %>%
+  group_by(subject, day, delivery_number) %>%
+  mutate(event_ts_rel = event_ts - min(event_ts)) %>%
+  ungroup()
+```
+
+
+```{r}
+data_mag_trial_lick_count <- data_lick_mag %>%
+  filter(event_id_char == 'lick') %>%
+  group_by(subject, day, delivery_number) %>%
+  summarise(trial_lick_count = n()) %>%
+  complete(delivery_number = 2:61, fill = list(trial_lick_count = 0)) 
+
+data_mag_trial_lick_count_summary <-  data_mag_trial_lick_count %>%
+    group_by(subject, day) %>%
+    summarise(trial_lick_count_mean = trial_lick_count %>% mean()) 
+```
+
+
+```{r}
+data_mag_trial_lick_latency <-  data_lick_mag %>%
+  filter(event_id_char == 'lick') %>%
+  group_by(subject, day, delivery_number) %>%
+  summarise(first_lick_latency = min(event_ts_rel)) 
+
+data_mag_trial_lick_latency_summary <-  data_mag_trial_lick_latency %>%
+    group_by(subject, day) %>%
+  summarise(first_lick_latency_mean = first_lick_latency %>% mean() / 1000) 
+```
+
+```{r}
+data_mag_trial_lick_proportion <- data_lick_mag %>%
+  filter(event_id_char == 'lick') %>%
+  group_by(subject, day, delivery_number) %>%
+  summarise(trial_lick_count = n()) %>%
+  group_by(subject, day) %>%
+  summarise(trial_lick = n(),
+            trial_total = 60) %>%
+  mutate(trial_lick_proportion = trial_lick / trial_total )
+
+```
+
+
+```{r}
+df_series <- data_lick_mag %>%
+  filter(event_id_char %in% c('lick')) %>%
+  select(blockname, subject, event_id_char, event_ts)
+
+df_events <- data_lick_mag %>%
+  filter(event_id_char %in% c('spout_extended')) %>%
+  select(blockname, subject, event_id_char, event_ts) %>%
+  filter(event_ts > 0) %>%
+  rename(trial_start_ts = event_ts) %>%
+  group_by(blockname) %>%
+  arrange(blockname, trial_start_ts) %>%
+  mutate(trial_num = row_number()) %>%
+  ungroup()
+
+peri_event <- return_peri_event_series(
+   df_series = df_series,
+   df_events = df_events, 
+   var_series_ts = 'event_ts', 
+   var_event_ts = 'trial_start_ts',
+   var_event_num = 'trial_num',
+   var_grouping = c('blockname'), 
+   time_pre = 1000, 
+   time_post = 6000,
+   filt_duplicate = 0
+   )
+```
+
+```{r}
+peri_event_binned <- return_event_binned_counts(
+  df_events = peri_event,
+  var_relative_ts = rel_time,
+  time_start = 0,
+  time_end = 5000,
+  bin_width = 100,
+  blockname
+)
+
+peri_event_binned <- peri_event_binned %>%
+  mutate(event_count_avg = event_count / 60, # trial count
+         binned_lick_freq = event_count_avg / (100 / 1000)) %>% 
+  left_join(log_data %>% select(blockname = blockname, subject, day)) 
+```
+
+
+```{r, echo = TRUE}
+data_lick_mag_raster <- data_lick_mag %>%
+  filter(event_ts_rel < 5000) %>%
+  filter(event_id_char == 'lick')
+```
+
+## plots
+```{r, fig.height = 3, fig.width = 3}
+data_lick_mag_raster %>%
+  filter(subject == 'aar06') %>%
+  ggplot(aes(event_ts_rel, delivery_number)) +
+  geom_point(size = 0.5) +
+  theme_ag01() +
+  
+  facet_grid(day~subject) +
+  coord_cartesian(xlim = c(0, 5000), expand = FALSE) 
+```
+
+```{r, fig.height = 3, fig.width = 3}
+peri_event_binned %>%
+  filter(event_bin >= 0, event_bin <= 5000) %>%
+  ggplot(aes(event_bin, binned_lick_freq, color = subject)) +
+  geom_line(size = 0.5, alpha = 1/4) +
+  stat_summary(fun.data = 'mean_se', geom = 'ribbon', alpha = 0.5, aes(group = day)) +
+  
+  stat_summary(fun = 'mean', geom = 'line', size = 0.5, aes(group = day)) +
+  
+  theme_ag01() +
+  facet_grid(day~.) +
+  coord_cartesian(ylim = c(0,10), xlim = c(0, 5000), expand = FALSE, clip = 'off') +
+   
+  xlab('Time (sec)') +
+  ylab('Lick Frequency (Hz)')
+```
+
+```{r}
+data_mag_trial_lick_proportion %>%
+  ggplot(aes(day, trial_lick_proportion, color = subject)) +
+  geom_line(aes(group = subject), alpha = 1/3) + 
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0, aes(group = 1)) +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = 1)) +
+  theme_ag01() +
+  xlab('Session') +
+  ylab('Trial Lick Proportion')
+
+```
+
+```{r}
+data_mag_trial_lick_latency_summary %>%
+  ggplot(aes(day, first_lick_latency_mean, color = subject)) +
+  geom_line(aes(group = subject), alpha = 1/3) + 
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0, aes(group = 1)) +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = 1)) +
+  theme_ag01() +
+  xlab('Day') +
+  ylab('Mean Lick Latency (s)')
+```
+
+```{r}
+data_mag_trial_lick_count_summary %>%
+  ggplot(aes(day, trial_lick_count_mean, color = subject)) +
+  geom_line(aes(group = subject), alpha = 1/3) + 
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0, aes(group = 1)) +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = 1)) +
+  theme_ag01() +
+  xlab('Day') +
+  ylab('Mean Trial Lick Count') 
+```
+
+# operant
+## import data
+```{r}
+blocknames <- log_data %>%
+  filter(procedure == 'fr_sucrose_10') %>%
+  pull(blockname)
+
+data_list <- combined_import(import_directory = dir_processed,
+                             filter_strings = blocknames,
+                             prefixes = NA,
+                             suffixes = c('_data_event.csv', '_data_rotation.csv', '_data_summary.csv')
+                             )
+
+data_fr <- data_list[[1]] %>% left_join(log_data)
+data_rotation_fr <- data_list[[2]] %>% left_join(log_data)
+data_summary_fr <- data_list[[3]] %>% left_join(log_data)
+```
+
+
+## plots
+```{r}
+data_rotation_fr %>%
+  mutate(event_ts = event_ts/1000/60) %>%
+  ggplot(aes(event_ts, rotation_absolute_turn, color = subject)) +
+  geom_hline(yintercept = 0, color = 'darkgrey', linetype = 2) +
+  geom_line(aes(group = subject), alpha = 1/2) +
+  theme_ag01() +
+  facet_grid(.~day) +
+  xlab('Time (min)') +
+  ylab('Cummulative Position (turn)') 
+
+```
+```{r}
+data_plt <- data_rotation_fr %>%
+  group_by(subject, day) %>%
+  filter(event_ts == max(event_ts))
+
+data_plt %>%
+  ggplot(aes(day, rotation_absolute_turn, color = subject)) +
+  geom_hline(yintercept = 0, color = 'darkgrey', linetype = 2) +
+  geom_line(aes(group = subject), alpha = 1/2) +
+  #geom_beeswarm(cex = 3, size = 3, stroke = 0.5, shape = 21, fill = NA) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0, aes(group = 1)) +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = 1)) +
+  theme_ag01() +
+   
+  xlab('Cumulative Position (turn)') +
+  ylab('Rotation (turn)') 
+```
+
+```{r}
+data_summary_fr %>%
+  filter(event_id_char %in% c('active_rotation', 'inactive_rotation')) %>%
+  ggplot(aes(day, rotation_turn, color = event_id_char)) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0, aes(group = event_id_char), linetype = 1) +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = event_id_char)) +
+  theme_ag01() +
+  scale_color_manual(values = c('red', 'darkgrey')) +
+  xlab('Day') +
+  ylab('Rotation (turn)') 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

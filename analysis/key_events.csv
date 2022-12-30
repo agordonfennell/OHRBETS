@@ -66,3 +66,4 @@ event_key,event_id,event_id_char,id_type
 1,1,start_session,event
 1,0,end_session,event
 1,149,rotation_position,event
+1,142,rotation_position_start,event

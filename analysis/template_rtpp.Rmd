@@ -1,0 +1,156 @@
+---
+title: "headfixed_rotary_operant_ratio_extraction"
+author: "adam gordon-fennell"
+date: "04/16/2021"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    toc_depth: 4
+---
+
+
+
+
+# setup
+## kniter
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = TRUE)
+```
+
+## libraries
+```{r, echo = TRUE}
+library(tidyverse)
+library(viridis)
+library(lubridate)
+library(janitor)
+library(feather) # if using feather format
+library(ggh4x) # force_panelsizes
+library(ggbeeswarm)
+library(afex) # aov
+library(emmeans) # posthoc
+library(patchwork) 
+```
+
+## sources
+```{r}
+dir_source <- './functions/'
+
+source_files <- c('r_general.R', 'r_head_fixed_processing.R', 'r_head_fixed_plots.R')
+
+source_functions <- function(){
+  for(source_file in source_files){
+    source(str_c(dir_source, source_file))
+    }
+}
+
+source_functions()
+```
+
+# extract and pre process data data
+## setup
+```{r, echo = TRUE}
+# directories 
+dir_raw <- './example_data/raw/'
+dir_extraction <- './example_data/extracted/'
+dir_processed <- './example_data/processed/'
+dir_analysis <- './example_data/analysis/'
+
+# file format ('csv', or 'feather')
+file_format_output <- 'csv'
+
+# data logs and keys
+log_data <- read_csv('log_data.csv', na = 'NA', col_types = cols()) %>% mutate(date = mdy(date))
+log_multi_spout_ids <-  read_csv('log_multi_spout_ids.csv', na = 'NA', col_types = cols())
+key_events <-  read_csv('key_events.csv',na = 'NA',  col_types = cols())
+```
+
+## extract and tidy data
+```{r}
+# Universal extraction and tidying script
+extract_serial_output(
+  dir_raw,                       # directory of the raw csv output from the arduino
+  key_events,                    # key for decoding raw data
+  dir_extraction,                # directory for the tidy datasets to be saved to
+  manual_experiments = c('aan'), # optional- experiment string to process a single experiment
+  manual_blocknames = NA,        # optional- use a vector of strings to specify individual sessions to process 
+  file_format_output,            # file format (csv or feather)
+  overwrite = 1                  # 0: only process new files in dir_raw, 1: process all files found in dir_raw and overwrite data in dir_extraction
+  )
+
+```
+
+
+```{r}
+blocknames <- log_data %>%
+  filter(procedure == 'rtpp') %>%
+  pull(blockname)
+
+process_arduino_rtpp_2zones(
+  dir_extraction, 
+  dir_processed, 
+  log_data,
+  key_events,
+  file_format_output = 'csv',
+  manual_fns = blocknames,
+  wheel_diameter = 63,
+  overwrite = 1)
+```
+
+
+## import data
+```{r}
+data_list_hf <- combined_import(
+  import_directory = dir_processed,
+  filter_strings = blocknames,
+  prefixes = NA,
+  suffixes = c('_data_position.csv', '_rtpp_summary.csv')
+  )
+
+data_hf          <- data_list_hf[[1]] %>% left_join(log_data)
+data_hf_summary  <- data_list_hf[[2]] %>% left_join(log_data)
+```
+
+
+## plots
+```{r}
+data_plt <- data_hf %>%
+  arrange(subject, stim_freq, event_ts) %>%
+  filter(subject %in% c('aan03','aan11', 'aan13')) %>%
+  filter(stim_freq == 40) %>%
+  mutate(rotation_position_corrected = ifelse(subject == 'aan03', 65-rotation_position, rotation_position)) # correct for pairing
+
+data_plt %>%
+  ggplot(aes(rotation_position_corrected, event_ts, group = subject)) +
+  geom_path() +
+  coord_polar() +
+  facet_grid(.~group) +
+  theme_ag01() +
+  facet_grid(stim_freq~group) +
+    theme(
+      axis.line = element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_blank(),
+      axis.ticks = element_blank(), 
+      axis.title = element_blank()
+    )  
+```
+
+```{r}
+data_hf_summary %>%
+  filter(zone == 'laser') %>%
+  mutate(duration = duration / 1000) %>%
+  ggplot(aes(stim_freq, duration, color = group)) +
+  geom_line(aes(group = subject), alpha = 0.33) +
+  stat_summary(fun = 'mean', geom = 'line', size = 1) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', size = 1, width = 0) +
+  facet_grid(.~procedure) +
+  coord_cartesian(xlim = c(0,40), ylim = c(0,1200), expand = FALSE, clip = "off") +
+  theme_ag01() +
+  theme(panel.spacing = unit(2, "lines")) +
+  force_panelsizes(rows = unit(3, "cm"), cols = unit(3, "cm")) +
+  xlab('Stimulation Frequency (Hz)') +
+  ylab('Paired Duration')
+
+```

@@ -816,3 +816,180 @@ generate_session_binned_count <- function(data_trial_summary, session_trial_widt
 }
 
 
+process_arduino_rtpp_2zones <- function(dir_extraction, dir_processed, log_data, key_events, file_format_output, manual_fns = NA, wheel_diameter = 63, overwrite = 0){
+  # process each individual 2zone rtpp file in dir_extracted and save in dir_processed
+  #
+  # inputs:
+  #  - dir_extraction (string): path to extracted datasets for each session ending with forward slash (e.g. ./data/extracted/)
+  #  - dir_processed (string): output directory for processed datasets
+  #  - log_data (dataframe): variables for the blockname, experiment, cohort, date used for assigning spout ids listed in log_multi_spout_ids
+  #  - log_multi_spout_ids (df): variables for date, experiment, cohort, date, spout, and solution
+  #  - file_format_output output file format ('csv' or 'feather')
+  #  - manual_fns (vector of strings): vector of file names to process, use NA to process all data in dir_extraction
+  #     ***note: use manual_fns or store data of different types in unique folders to prevent processing data with incorrect preprocessing pipeline
+  #  - overwrite (logical): 0: only process data not yet processed, 1: overwrite existing datasets
+  #  - time_bin_width (double): time in ms for the length of time bins used for data_trial_binned
+  #  - time_bin_range (2 element vector, double): time window relative to trial onset for computing binned counts for data_trial_binned
+
+  # reformat each dir so it ends in /
+  dir_extraction <- dir_extraction %>% format_dir()
+  dir_processed <- dir_processed %>% format_dir()
+
+  print("batch processing arduino data...")
+
+  # determine unique sessions  in dir_extracted
+  dir_extraction_fns <- list.files(dir_extraction)
+
+  dir_extraction_fns <- dir_extraction_fns[str_detect(dir_extraction_fns, '_event') & !str_detect(dir_extraction_fns, 'combined')] %>%
+    str_remove(str_c('_event.', file_format_output) )
+
+
+  # use manual_fns to filter to predetermined set
+  if(!is.vector(manual_fns)){
+    print("Aborted pre processing... manual_fns is not a vector")
+    return()
+  }
+
+  if(sum(!is.na(manual_fns)) > 0){
+    dir_extraction_fns <- dir_extraction_fns[dir_extraction_fns %in% manual_fns]
+  }
+
+
+  # determine files already in dir_processed and remove from dir_extraction_fns
+  dir_processed_fns <- list.files(dir_processed)
+
+  if(overwrite != 1){
+    for(dir_extraction_fn in dir_extraction_fns){
+      if(sum(str_detect(dir_processed_fns, dir_extraction_fn) > 0)){
+        dir_extraction_fns <- dir_extraction_fns[!str_detect(dir_extraction_fns, dir_extraction_fn)]
+      }
+    }
+  }
+
+  if(length(dir_extraction_fns) == 0){
+    print(str_c("all files in dir ", dir_extraction, ' are already processed and saved in dir ', dir_processed))
+    return()
+  }
+
+      # compute distances for rotation and ratios using data log
+  log_data <- log_data %>%
+    mutate(wheel_circumfrence = pi * wheel_diameter) %>%
+    mutate(resolution_rotation = 1 / (ppr / resolution)) %>%
+    mutate(rotation = resolution_rotation * wheel_circumfrence)
+
+  for(fn in dir_extraction_fns){ # for each file...
+
+    print(str_c("processing fn: ", fn))
+
+    # read in combined data
+    if(str_detect(file_format_output, 'feather')){
+      data          <- read_feather(str_c(dir_extraction, fn, '_event.feather'))
+      para          <- read_feather(str_c(dir_extraction, fn, '_param.feather'))
+    } else if(str_detect(file_format_output, 'csv')){
+      data          <- read.csv(str_c(dir_extraction, fn, '_event.csv'))
+      para          <- read.csv(str_c(dir_extraction, fn, '_param.csv'))
+    } else {
+      print('Error: incompatable file type (requires .feather or .csv)')
+    }
+
+    data <- data %>%
+      left_join(key_events) %>%
+      select(-id_type)
+
+    # join data log to data
+    data <- data %>%
+      mutate(date = ymd(date)) %>%
+      left_join(log_data)
+
+    # create cumulative event count
+    data_rotation <- data %>%
+      filter(event_id_char %in% c('active_rotation', 'inactive_rotation')) %>%
+      group_by(blockname, event_id, event_id_char) %>%
+      arrange(blockname, event_ts) %>%
+      mutate(count_cummulative = row_number()) %>%
+      mutate(rotation_relative      = cumsum(rotation),
+             rotation_relative_turn = cumsum(resolution_rotation)) %>%
+      mutate(rotation_absolute      = ifelse(event_id_char == 'inactive_rotation', -1 * rotation,            1 * rotation),
+             rotation_absolute_turn = ifelse(event_id_char == 'inactive_rotation', -1 * resolution_rotation, 1 * resolution_rotation)) %>%
+      group_by(blockname) %>%
+      mutate(rotation_absolute      = cumsum(rotation_absolute),
+             rotation_absolute_turn = cumsum(rotation_absolute_turn)
+             ) %>%
+      ungroup()
+
+    # create data position (can be replaced with function for other behavioral designs)
+    data_position <-  data %>%
+      filter(event_id_char %in% c('active_rotation', 'inactive_rotation', 'rotation_position')) %>%
+      mutate(event_id_char = ifelse(event_id_char %in% c('active_rotation', 'inactive_rotation'), 'event_ts', event_id_char)) %>%
+      group_by(event_id_char) %>%
+      mutate(position_count = row_number()) %>%
+      select(-event_id) %>%
+      spread(event_id_char, event_ts) %>%
+      ungroup() %>%
+      mutate(zone = ifelse(zone_paired == 'z1' & rotation_position <= resolution/2, 'no_laser', NA)) %>% # assign laser pairings to zones
+      mutate(zone = ifelse(zone_paired == 'z1' & rotation_position >  resolution/2, 'laser', zone)) %>%
+      mutate(zone = ifelse(zone_paired == 'z2' & rotation_position <= resolution/2, 'laser', zone)) %>%
+      mutate(zone = ifelse(zone_paired == 'z2' & rotation_position >  resolution/2, 'no_laser', zone))
+
+    # create position summary
+    data_position_steps <- data_position %>%
+      arrange(event_ts) %>%
+      mutate(time_step = lead(event_ts) - event_ts) %>%
+      filter(!is.na(event_ts)) %>%
+      mutate(time_step = ifelse(event_ts == max(event_ts), para$session_duration - event_ts, time_step)) # fill in last time point
+
+    stating_position <- data %>%
+      filter(event_id_char == 'rotation_position_start') %>%
+      pull(event_ts)
+
+    data_position_steps <- data_position_steps %>%
+      filter(event_ts == min(event_ts)) %>%
+      mutate(  # fill in first time point
+        rotation_position = stating_position,
+        zone = 'no_laser',
+        time_step = event_ts
+      ) %>%
+      bind_rows(data_position_steps)
+
+    data_position_summary <- data_position_steps %>%
+      group_by(blockname, zone) %>%
+      summarise(
+        duration = sum(time_step, na.rm = TRUE),
+        crossings = n(),
+        .groups = 'drop'
+        )
+
+    # create summary
+    data_summary <- data %>%
+      group_by(blockname, event_id_char, rotation, resolution_rotation) %>%
+      summarise(event_count = n()) %>%
+      mutate(rotation      = ifelse(event_id_char %in% c('active_rotation', 'inactive_rotation'), event_count * rotation, NA)) %>%
+      mutate(rotation_turn = ifelse(event_id_char %in% c('active_rotation', 'inactive_rotation'), event_count * resolution_rotation,NA)) %>%
+      select(-resolution_rotation) %>%
+      ungroup()
+
+
+    # save outputs
+    if(str_detect(file_format_output, 'feather')){
+      data %>% write_feather(str_c(dir_processed, fn, '_data_event.feather'))
+      if(nrow(data_rotation) > 0){
+        data_rotation %>% write_feather(str_c(dir_processed,  fn, '_data_rotation.feather'))
+        data_position_steps %>% write_feather(str_c(dir_processed,  fn, '_data_position.feather'))
+        data_position_summary %>% write_feather(str_c(dir_processed,  fn, '_data_rtpp_summary.feather'))
+      }
+      data_summary  %>% write_feather(str_c(dir_processed, fn, '_data_summary.feather'))
+
+    } else if(str_detect(file_format_output, 'csv')){
+
+      data %>% write_csv(str_c(dir_processed, fn, '_data_event.csv'))
+      if(nrow(data_rotation) > 0){
+        data_rotation %>% write_csv(str_c(dir_processed, fn, '_data_rotation.csv'))
+        data_position_steps %>% write_csv(str_c(dir_processed, fn, '_data_position.csv'))
+        data_position_summary %>% write_csv(str_c(dir_processed,  fn, '_data_rtpp_summary.csv'))
+      }
+      data_summary  %>% write_csv(str_c(dir_processed, fn, '_data_summary.csv'))
+    } else {
+      print('Error: incompatable file type (requires .feather or .csv)')
+    }
+  }
+}
