@@ -192,17 +192,15 @@ void loop() {
   // session initialization (runs once at start) -----------------------------------------------------------------
   if(session_end_ts == 0){
 
-    Serial.print(1);   Serial.print(" "); Serial.println(ts);                             // print start session
-    Serial.print(100); Serial.print(" "); Serial.println(session_duration);               // print end ts
-    Serial.print(101); Serial.print(" "); Serial.println(rotary_resolution);              // print rotary_resolution
-    Serial.print(141); Serial.print(" "); Serial.println(tm_switch_pairing_step);         // print tm_switch_pairing_step
-    Serial.print(131); Serial.print(" "); Serial.println(tone_freq_initially_paired);     // print tone_freq_initially_paired
-    Serial.print(132); Serial.print(" "); Serial.println(tone_freq_initially_unpaired);   // print tone_freq_initially_unpaired
-
-    Serial.print(140); Serial.print(" "); Serial.println(ts);                        // print time for session_pairing_current (ts must precede value)
-    Serial.print(140); Serial.print(" "); Serial.println(session_pairing_current);   // print initial pairing
-
-    Serial.print(142); Serial.print(" "); Serial.println(rotation_position);  // print initial position
+    Serial.print(1);   Serial.print(" "); Serial.println(ts);                           delay(3); // print start session
+    Serial.print(100); Serial.print(" "); Serial.println(session_duration);             delay(3); // print end ts
+    Serial.print(101); Serial.print(" "); Serial.println(rotary_resolution);            delay(3); // print rotary_resolution
+    Serial.print(141); Serial.print(" "); Serial.println(tm_switch_pairing_step);       delay(3); // print tm_switch_pairing_step
+    Serial.print(131); Serial.print(" "); Serial.println(tone_freq_initially_paired);   delay(3); // print tone_freq_initially_paired
+    Serial.print(132); Serial.print(" "); Serial.println(tone_freq_initially_unpaired); delay(3); // print tone_freq_initially_unpaired
+    Serial.print(140); Serial.print(" "); Serial.println(ts);                           delay(3); // print time for session_pairing_current (ts must precede value)
+    Serial.print(140); Serial.print(" "); Serial.println(session_pairing_current);      delay(3); // print initial pairing
+    Serial.print(142); Serial.print(" "); Serial.println(rotation_position);            delay(3); // print initial position
     
    if(session_tone){tone(pinSpeaker, tone_freq_initially_unpaired);} // start in unpaired side
     

@@ -110,9 +110,9 @@ void setup() {
  // rotate multi-spout head prior to session start
   servo_radial.attach(pinServo_radial);
   servo_radial.write(servo_radial_degs[current_spout-1]);
-  Serial.print(130); Serial.print(" "); Serial.println(ts);   // print radial position moved
-  Serial.print(127); Serial.print(" "); Serial.println(ts);
-  Serial.print(127); Serial.print(" "); Serial.println(current_spout);
+  Serial.print(130); Serial.print(" "); Serial.println(ts);            delay(3);   // print radial position moved
+  Serial.print(127); Serial.print(" "); Serial.println(ts);            delay(3);
+  Serial.print(127); Serial.print(" "); Serial.println(current_spout); delay(3);
   delay(250);
   servo_radial.detach();
  

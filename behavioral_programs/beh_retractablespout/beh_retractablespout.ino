@@ -236,19 +236,19 @@ void loop() {
   
 // session initialization (runs once at start) -----------------------------------------------------------------
   if(first_loop){
-    Serial.print(1);   Serial.print(" "); Serial.println(ts);                               // print start session
-    Serial.print(127); Serial.print(" "); Serial.println(trial_count);                      // print session duration
-    Serial.print(104); Serial.print(" "); Serial.println(session_retract);                  // print session_retract
-    Serial.print(137); Serial.print(" "); Serial.println(session_retract);                  // print session_tone
-    Serial.print(128); Serial.print(" "); Serial.println(min_iti);                          // print min_delay
-    Serial.print(129); Serial.print(" "); Serial.println(max_iti);                          // print max_delay
-    Serial.print(115); Serial.print(" "); Serial.println(access_time);                      // print access_time
-    Serial.print(116); Serial.print(" "); Serial.println(sol_duration[current_spout - 1]);  // print sol_duration
-    Serial.print(117); Serial.print(" "); Serial.println(num_sol);                          // print num_sol
-    Serial.print(118); Serial.print(" "); Serial.println(inter_sol_time);                   // print inter_sol_time
-    Serial.print(121); Serial.print(" "); Serial.println(tone_freq);                        // print tone_fr
-    Serial.print(122); Serial.print(" "); Serial.println(tone_duration);                    // print tone_duration
-    Serial.print(138); Serial.print(" "); Serial.println(tone_to_access_delay);             // tone_to_access_delay
+    Serial.print(1);   Serial.print(" "); Serial.println(ts);                              delay(3); // print start session
+    Serial.print(127); Serial.print(" "); Serial.println(trial_count);                     delay(3); // print session duration
+    Serial.print(104); Serial.print(" "); Serial.println(session_retract);                 delay(3); // print session_retract
+    Serial.print(137); Serial.print(" "); Serial.println(session_retract);                 delay(3); // print session_tone
+    Serial.print(128); Serial.print(" "); Serial.println(min_iti);                         delay(3); // print min_delay
+    Serial.print(129); Serial.print(" "); Serial.println(max_iti);                         delay(3); // print max_delay
+    Serial.print(115); Serial.print(" "); Serial.println(access_time);                     delay(3); // print access_time
+    Serial.print(116); Serial.print(" "); Serial.println(sol_duration[current_spout - 1]); delay(3); // print sol_duration
+    Serial.print(117); Serial.print(" "); Serial.println(num_sol);                         delay(3); // print num_sol
+    Serial.print(118); Serial.print(" "); Serial.println(inter_sol_time);                  delay(3); // print inter_sol_time
+    Serial.print(121); Serial.print(" "); Serial.println(tone_freq);                       delay(3); // print tone_fr
+    Serial.print(122); Serial.print(" "); Serial.println(tone_duration);                   delay(3); // print tone_duration
+    Serial.print(138); Serial.print(" "); Serial.println(tone_to_access_delay);            delay(3); // tone_to_access_delay
 
    // retract spout
     if(session_retract){ 

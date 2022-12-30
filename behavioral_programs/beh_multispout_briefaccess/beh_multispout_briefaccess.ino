@@ -300,18 +300,15 @@ void loop() {
 
   // session initialization (runs once at start) -----------------------------------------------------------------
   if (first_loop) {
-    Serial.print(1);   Serial.print(" "); Serial.println(ts);             // print start session
-    Serial.print(127); Serial.print(" "); Serial.println(trial_count);            // print session duration
-
-    Serial.print(207); Serial.print(" "); Serial.println(min_iti);                   // print min_delay
-    Serial.print(208); Serial.print(" "); Serial.println(max_iti);                   // print max_delay
-
-    Serial.print(115); Serial.print(" "); Serial.println(access_time);                 // print access_time
-    Serial.print(117); Serial.print(" "); Serial.println(num_sol);                     // print num_sol
-    Serial.print(118); Serial.print(" "); Serial.println(inter_sol_time);              // print inter_sol_time for fixed vol
-
-    Serial.print(213); Serial.print(" "); Serial.println(delay_sweep_to_radial_min);                     // print num_sol
-    Serial.print(214); Serial.print(" "); Serial.println(delay_sweep_to_radial_max);                     // print num_sol
+    Serial.print(1);   Serial.print(" "); Serial.println(ts);                        delay(3); // print start session
+    Serial.print(127); Serial.print(" "); Serial.println(trial_count);               delay(3); // print session duration
+    Serial.print(207); Serial.print(" "); Serial.println(min_iti);                   delay(3); // print min_delay
+    Serial.print(208); Serial.print(" "); Serial.println(max_iti);                   delay(3); // print max_delay
+    Serial.print(115); Serial.print(" "); Serial.println(access_time);               delay(3); // print access_time
+    Serial.print(117); Serial.print(" "); Serial.println(num_sol);                   delay(3); // print num_sol
+    Serial.print(118); Serial.print(" "); Serial.println(inter_sol_time);            delay(3); // print inter_sol_time for fixed vol
+    Serial.print(213); Serial.print(" "); Serial.println(delay_sweep_to_radial_min); delay(3); // print num_sol
+    Serial.print(214); Serial.print(" "); Serial.println(delay_sweep_to_radial_max); delay(3); // print num_sol
     
     // retract spout
     servo_retract.attach(pinServo_retract);
