@@ -1,4 +1,4 @@
-# Open-Stage: An Open-Source Platform for Head-Fixed Operant and Consummatory Behavior
+# OHRBETS (Open-source Head-fixed Rodent Behavior Experimental Training System)
 <p align="center">
   <img src="./images/system_render.png" width="800">
 </p>
