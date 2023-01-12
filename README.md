@@ -20,5 +20,13 @@ We will continue to update this repository and add additional hardware and softw
 - [3d Printing File Key](https://docs.google.com/spreadsheets/d/1pzRUh2JkpAaJyb1kA9NBVjSYz8nG3GPTu3c0QVQwKCg)
 
 
+## Tinkercad Models
+- [Full Respository](https://www.tinkercad.com/users/elZH8v8MJf0-adam-gordon-fennell)
+- [OHRBETS_assembly](https://www.tinkercad.com/things/58vTdDu0pfz)
+- [OHRBETS_components_filament](https://www.tinkercad.com/things/1Yv3k1L5hwq)
+- [OHRBETS_components_resin](https://www.tinkercad.com/things/6Ztq3dLU4Uj)
+- [OHRBETS_components_multispout](https://www.tinkercad.com/things/cckeigB3ydE)
+- [OHRBETS_arduino_enclosure](https://www.tinkercad.com/things/ki4dcN9vabO)
+
 ## Contributors
 Adam Gordon-Fennell (University of Washington), Garret Stuber (University of Washington)
