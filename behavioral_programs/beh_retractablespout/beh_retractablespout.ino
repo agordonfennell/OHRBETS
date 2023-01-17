@@ -46,7 +46,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static byte servo_retract_extended_degs[] = {180,180,180,180,180};
   static byte pinLickometer_ttl[] =           { 22, 22, 22, 22, 22};
 
-  byte current_spout = 1; // set spout for session (1 to n, where n is the nubmer of spouts on the system; used to index each vector above)
+  byte current_spout = 1; // set spout for session (1 to n, where n is the number of spouts on the system; used to index each vector above)
 
   
  // iti range (uniform random)
