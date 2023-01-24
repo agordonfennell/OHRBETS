@@ -15,7 +15,10 @@ The Arduino software includes programs written in the Arduino language. We have 
 The Analysis software includes programs written in R and relies on user created spreadsheets. We have included a universal decoder that parses the data produced by the Arduino. We have also included scripts for analyzing data produced by the generic operant conditioning and multi-spout brief access task Arduino programs.
 
 We will continue to update this repository and add additional hardware and software. We welcome contributions that add on to our system for different behavioral designs.  
-## Associated Manuscript
+## DOI: 
+- 10.5281/zenodo.7566343
+
+## Associated Pre-Print
 - [bioRxiv](https://www.biorxiv.org/content/10.1101/2023.01.13.523828v1)
 
 ## Up to Date Resources
