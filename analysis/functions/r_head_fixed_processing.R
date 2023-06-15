@@ -111,7 +111,7 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
 
   # filter if using manual_blocknames
   if(sum(!is.na(manual_blocknames)) > 0) {
-    dir_list <- dir_list[dir_list %>% str_detect(manual_blocknames)]
+    dir_list <- dir_list[dir_list %in% str_c(manual_blocknames, '.csv')]
 
     if(length(dir_list) == 0){
       print("No data in dir_raw matching manual_blocknames")
