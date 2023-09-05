@@ -3,7 +3,7 @@
   <img src="./images/system_render.png" width="800">
 </p>
 
-Accompany to [Gordon-Fennell et. al. 2023 *eLife*] (https://elifesciences.org/articles/86183)
+Accompany to [Gordon-Fennell et. al. 2023 *eLife*](https://elifesciences.org/articles/86183)
 
 ## Overview
 Here we make available an ecosystem of open-source hardware and software for operant and consumption experiments in head-fixed mice. For operant responding, mice rotate a wheel in one of two directions and operant responding is gated using a mechanical wheel break. For consumption, mice consume liquid solutions from a metal lick spout and access to the spout is gated using retraction and extension of the spout. The system also includes optional multi-spout hardware that allows fixed access to 1 of 5 spouts. Using the hardware, behavioral software, and analysis software included in this repository, the Gordon-Fennell et. al. 2022 reproduced operant and consummatory behaviors established in feely-moving mice. The system presented here offers a scalable option for these behavioral approaches and is compatible with head-fixed imaging techniques including 2-photon imaging.  
