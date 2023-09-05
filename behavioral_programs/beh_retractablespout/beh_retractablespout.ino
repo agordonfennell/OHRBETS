@@ -384,6 +384,10 @@ void fun_servo_retract_retracted(){ //------------------------------------
 
 /// end session -------------------------------------------------------------------------------------------
 void fun_end_session() {
+  for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++) { // for each solenoid
+    digitalWrite(pinSol[i_sol], LOW);                    // turn off solenoid
+  } 
+  
   servo_brake.attach(pinServo_brake);  
   servo_brake.write(servo_brake_engaged_deg);
   Serial.print(11); Serial.print(" "); Serial.println(ts);   
