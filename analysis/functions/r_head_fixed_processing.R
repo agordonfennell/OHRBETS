@@ -25,12 +25,24 @@ file_date <- function(x){
 #  note: if additional data types are added, add functions here and call them in extract_serial_output
 # extract unidimensional parameters
 extract_param <- function(x){
-
-  param <- x %>%
+  
+  param <-   x %>%
     filter(id_type == 'param') %>%
     rename(value = event_ts) %>%
     select(-event_id) %>%
-    unique() %>%
+    unique()
+  
+  # rename parameters that appear more than once
+  param <- param %>%
+    group_by(event_id_char) %>%
+    mutate(id_count = n(),
+           id_n = row_number()) %>%
+    mutate(event_id_char = ifelse(id_count == 1, event_id_char, str_c(event_id_char, '_', id_n))) %>%
+    select(-id_count, -id_n) %>%
+    ungroup() 
+  
+  # spread params
+  param <- param %>%
     spread(event_id_char, value)
   
   param <- param %>% file_date()
@@ -123,8 +135,19 @@ extract_serial_output <- function(dir_raw, key_events, dir_processed, manual_exp
 
   # filter list to only file names that contain exp
   if(sum(!is.na(manual_experiments)) > 0){
-    dir_list <- dir_list[str_detect(dir_list, manual_experiments)]
+    for(manual_experiment in manual_experiments){
+      dir_list_exp <- dir_list[str_detect(dir_list, manual_experiment)]
+      
+      if(manual_experiment == manual_experiments[1]){
+        dir_list_filt <- dir_list_exp
+      } else {
+        dir_list_filt <- c(dir_list_filt, dir_list_exp)
+      }
+      
+    }
+    dir_list <- dir_list_filt
   }
+  
   # determine files already in dir_processed and remove from dir_list
   dir_processed_fns <- list.files(dir_processed)
 
