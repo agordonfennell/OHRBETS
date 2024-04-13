@@ -27,16 +27,16 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 
   
   // session parameters *************************************************************************************************************
-  // 
-  
-  //session
+ //session
   byte trial_count = 100;
+  static byte lick_detection_circuit = 0; // 0: cap sensor, 1: voltage sensor
+  static int tm_lick_latency_min = 50;
   
   byte spout_block_set[] = {3,4,1,0,2,0,2,3,1,4,3,4,2,0,1,3,4,0,1,2,4,0,1,0,4,2,3,1,3,2,4,0,3,1,1,2,0,4,3,2,1,2,3,0,4,4,0,1,3,2,2,1,0,4,3,0,2,1,4,3,2,0,0,2,1,4,4,3,1,3,3,0,3,4,1,1,2,2,4,0,2,3,0,1,1,2,4,4,3,0,2,0,4,1,3,0,3,2,4,1};
  
   unsigned long access_time = 3000; // total time before spout is retracted
-  unsigned long min_iti = 8000;     // minimum iti (ms)
-  unsigned long max_iti = 13000;    // maximum iti (ms)
+  unsigned long min_iti = 3000;//8000;     // minimum iti (ms)
+  unsigned long max_iti = 3000;//13000;    // maximum iti (ms)
   
   static byte num_prime = 2; // number of priming pulses at start of session
   
@@ -55,7 +55,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static byte sweep_deg = 77; // neutral position of spout between trials
   
   static unsigned long delay_sweep_to_radial_min = 1000; // minimum time from sweep to set next spout
-  static unsigned long delay_sweep_to_radial_max = 4000; // maximum time from sweep to set next spout
+  static unsigned long delay_sweep_to_radial_max = 1000; // maximum time from sweep to set next spout
 
   static boolean access_type = 0; //0: free-acess (lick triggered solenoid throughout access period), 1: limited (set number of solenoid openings)
 
@@ -66,13 +66,13 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static int inter_sol_time = 180;        // interval between each solenoid opening (measured from end of previous until start of next)
   
  // arduino pins ----------------------------------------------------------------------------
- // inputs--
-  static byte pinLickometer = 6;
+ // inputs ----------------------------
+  static byte pinLickometer = 21; // only set to output if lick_detection_circuit = 1
   
  // outputs--
-  static byte pinServo_retract = 37;
-  static byte pinServo_brake = 39;
-  static byte pinServo_radial = 41;
+  static byte pinServo_retract = 9;
+  static byte pinServo_brake = 10;
+  static byte pinServo_radial = 11;
   static byte pinSpeaker = 12;
   
  // ttls for external time stamps
@@ -117,6 +117,8 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   boolean toggle_spout_update;
   byte current_sol = pinSol[0];
   byte mode;
+  boolean pinLickometer_state;
+  boolean pinLickometer_state_previous;
   
  // counters---
   volatile byte count_sol;                 // counter for number of solenoid openings per access period
@@ -130,6 +132,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long ts_sol_onset;
   unsigned long ts_sol_ttl_off;
   unsigned long ts_lickomter_ttl_off;
+  unsigned long ts_lick_gate_open = 0;
   
   volatile unsigned long brake_spout_delay; // random delay length between brake and access period
   
@@ -145,10 +148,12 @@ void setup() {
   Serial.begin(115200);
   randomSeed(analogRead(0));
 
-  // define inputs --------------------------------
-  pinMode(pinLickometer, INPUT);
+ // define inputs
+  if(lick_detection_circuit == 1){
+    pinMode(pinLickometer, INPUT);
+  }
 
-  // define outputs
+ // define outputs
   pinMode(pinSpeaker, OUTPUT);
   pinMode(pinSol_ttl, OUTPUT);
   pinMode(pinTrial_ttl, OUTPUT);
@@ -197,14 +202,17 @@ void setup() {
   }
 
   // setup capative touch sesnsor ---------------
-  if (!cap.begin(0x5A)) {                   // if the sensor is not detected
-    Serial.println("MPR121 not detected!"); // print warning (and crash python program)
-    while (1);
+  if(lick_detection_circuit == 0){
+    if (!cap.begin(0x5A)) {                   // if the sensor is not detected
+      Serial.println("MPR121 not detected!"); // print warning (and intentionally crash python program)
+      while (1);
+    }
+    cap.setThresholds(6,2); // set thresholds for cap sensor, adjust these based on sensitivity
+    delay(50);
+    Serial.print(998);   Serial.print(" "); Serial.println(cap.filteredData(1)); // print cap sensor starting value
+  } else {
+    delay(50);
   }
-  
-  cap.setThresholds(6, 1);
-  delay(50);
-  Serial.print(998);   Serial.print(" "); Serial.println(cap.filteredData(1));
 
   // wait for serial command before initating session---------------------------------------------------------------------
   while (Serial.available() <= 0) {} // wait for serial input to start session
@@ -254,6 +262,12 @@ void loop() {
   // update spout (toggled below) -----------------
   spout_update();
 
+  // open lick gate -------------------------------
+  if (ts > ts_lick_gate_open && ts_lick_gate_open != 0) {
+    lick_gate = 1;
+    ts_lick_gate_open = 0;
+  }
+
   // detach spout servo ---------------------------
   if (ts >= detach_servo_retract_ts && detach_servo_retract_ts != 0) {
     servo_retract.detach();
@@ -263,10 +277,13 @@ void loop() {
   // detach radial servo ---------------------------
   if (ts >= detach_servo_radial_ts && detach_servo_radial_ts != 0) {
     servo_radial.detach();
-          
-    cap.begin(0x5A);
-    delay(50);
-    cap.setThresholds(6, 1); 
+
+    if(lick_detection_circuit == 0){
+      cap.begin(0x5A);
+      delay(50);
+      cap.setThresholds(6, 1); 
+    }
+    
     detach_servo_radial_ts = 0;
   }
 
@@ -301,7 +318,6 @@ void loop() {
   // session initialization (runs once at start) -----------------------------------------------------------------
   if (first_loop) {
     Serial.print(1);   Serial.print(" "); Serial.println(ts);                        delay(3); // print start session
-    Serial.print(127); Serial.print(" "); Serial.println(trial_count);               delay(3); // print session duration
     Serial.print(207); Serial.print(" "); Serial.println(min_iti);                   delay(3); // print min_delay
     Serial.print(208); Serial.print(" "); Serial.println(max_iti);                   delay(3); // print max_delay
     Serial.print(115); Serial.print(" "); Serial.println(access_time);               delay(3); // print access_time
@@ -327,36 +343,58 @@ void loop() {
   }
 
   // licking-----------------------------------------------------------------------------------------------------
-  // check state of sensor to see if it is currently touched
-  currtouched = cap.touched();
+ if(lick_detection_circuit == 0){ // if using cap sensor --------------------------------------------------------------
+   // check state of sensor to see if it is currently touched
+    currtouched = cap.touched();
 
-  // check to see if touch onset occured
-  //for (uint8_t i = 1; i <= num_spouts; i++) { // for each sensor (change the maximum i if more touch sensors are added)
-  for (uint8_t i = current_spout + 1; i <= current_spout + 1; i++) { // for each sensor (change the maximum i if more touch sensors are added)
-    if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) ) { // if touched now but not previously
-      lick = i;                                               // flag lick
+   // check to see if touch onset occured
+    for (uint8_t i = current_spout + 1; i <= current_spout + 1; i++) { // for each sensor (change the maximum i if more touch sensors are added)
+      if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) ) { // if touched now but not previously
+        lick = i;                                               // flag lick
+      }
     }
-  }
 
   // save current state for comparision with next state
-  lasttouched = currtouched;
+   lasttouched = currtouched;
+ }
+
+ if(lick_detection_circuit == 1){ // if using voltage sensor ----------------------------------------------------------
+  // check state of sensor to see if it is currently touched
+   pinLickometer_state = digitalRead(pinLickometer);
+
+  // check to see if touch onset occured
+   if(pinLickometer_state > pinLickometer_state_previous) { // if touched now but not previously
+        lick = current_spout+1;                             // flag lick
+   }
+   
+  // save current state for next loop 
+   pinLickometer_state_previous = pinLickometer_state;
+ }
 
   // programed consequences to licking
   if (lick > 0) { // if lick has occured
-    digitalWrite(pinLickometer_ttl[lick - 1], HIGH);                          // turn on ttl for external ts
     if (lick_gate){
       Serial.print(30 + lick); Serial.print(" "); Serial.println(ts);  // print lick onset
     } else {
       Serial.print(330 + lick); Serial.print(" "); Serial.println(ts); // print lick onset outside of access window
     }
-    ts_lickomter_ttl_off = ts + ttl_duration;                       // set ttl offset time
 
     if (access_type == 0 && lick_gate == 1) {
-      digitalWrite(pinSol[lick - 1], HIGH);                          // open solenoid for touched spout
+      lick_gate = 0;
+      digitalWrite(pinLickometer_ttl[lick - 1], HIGH);                // turn on ttl for external ts
+      digitalWrite(pinSol[lick - 1], HIGH);                           // open solenoid for touched spout
       Serial.print(40 + lick); Serial.print(" "); Serial.println(ts); // print sol opening onset
-      ts_sol_offset = ts + sol_duration[lick - 1];                            // set solenoid close time
-    }
+      
+      ts_sol_offset = ts + sol_duration[lick - 1];                    // set solenoid close time
+      ts_lickomter_ttl_off = ts + ttl_duration;                       // set ttl offset time
 
+      if (tm_lick_latency_min > sol_duration[lick - 1]) {
+        ts_lick_gate_open = ts + tm_lick_latency_min;
+      } else {
+        ts_lick_gate_open = ts +  sol_duration[lick - 1];
+      }
+    }
+    
     lick = 0; // reset lick flag to close if statement
   }
 

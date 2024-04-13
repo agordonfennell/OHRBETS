@@ -28,6 +28,8 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 // session parameters *************************************************************************************************************
  // general parameters -------
   static unsigned long session_duration = 600000; // session duration (ms) (note: do not use formula here)
+  static byte lick_detection_circuit = 0; // 0: cap sensor, 1: voltage sensor
+  static int tm_lick_latency_min = 50;
 
  // spout / sol pins & parameters
   static byte num_spouts = 5; // should have this many values for each of the following vectors
@@ -42,6 +44,9 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   byte current_spout = 1; // set spout for session (1 to n, where n is the number of spouts on the system; used to index each vector above)
 
 // arduino pins ----------------------------------------------------------------------------
+ // inputs ----------------------------
+  static byte pinLickometer = 21; // only set to output if lick_detection_circuit = 1
+  
  // outputs ---------------------------
   static byte pinServo_retract = 9; 
   static byte pinServo_brake = 10;
@@ -70,7 +75,10 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 // flags -------------------------------------------------------------------------------------
  // variables---
   boolean lick;
-
+  boolean lick_gate = 1;
+  boolean pinLickometer_state;
+  boolean pinLickometer_state_previous;
+  
 // time stamps & timers ---------------------------------------------------------------------
  // variables---
   volatile unsigned long ts; 
@@ -78,16 +86,22 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long ts_sol_offset;
   unsigned long ts_sol_ttl_off;
   unsigned long ts_lickomter_ttl_off; 
+  unsigned long ts_lick_gate_open = 0;
   unsigned long session_end_ts;
 
  // parameters---
   static int ttl_duration = 5; // duration of tttl pulses for external time stamps (ms)
-  
+
 
 // _______________________________________________________________________________________________________________________________________________________________________________
 /// setup ________________________________________________________________________________________________________________________________________________________________________
 void setup() {
   Serial.begin(115200);
+  
+ // define inputs
+  if(lick_detection_circuit == 1){
+    pinMode(pinLickometer, INPUT);
+  }
   
  // define outputs
   pinMode(pinSol_ttl, OUTPUT);
@@ -124,22 +138,24 @@ void setup() {
   servo_retract.detach();
 
   // setup capative touch sesnsor 
-  if (!cap.begin(0x5A)) {                   // if the sensor is not detected
-    Serial.println("MPR121 not detected!"); // print warning (and intentionally crash python program)
-    while (1);
+  if(lick_detection_circuit == 0){
+    if (!cap.begin(0x5A)) {                   // if the sensor is not detected
+      Serial.println("MPR121 not detected!"); // print warning (and intentionally crash python program)
+      while (1);
+    }
+    cap.setThresholds(6,2); // set thresholds for cap sensor, adjust these based on sensitivity
+    delay(50);
+    Serial.print(998);   Serial.print(" "); Serial.println(cap.filteredData(1)); // print cap sensor starting value
+  } else {
+    delay(50);
   }
-
-  cap.setThresholds(6,2); // set thresholds for cap sensor, adjust these based on sensitivity
-  delay(50);
-  Serial.print(998);   Serial.print(" "); Serial.println(cap.filteredData(1)); // print cap sensor starting value
-
 
  // wait for serial command before initating session---------------------------------------------------------------------
   while (Serial.available() <= 0) {} // wait for serial input to start session
   delay(100);
   
  // save start time and send ttl to initate scope
-  ts_start=millis();  
+  ts_start = millis();  
 }
 
 
@@ -148,8 +164,14 @@ void setup() {
 void loop() {
 // background functions (run constantly independent of task events)--------------------------------------------
  // generate timestamp ---------------------------
-  ts=millis()-ts_start;
+  ts = millis()-ts_start;
 
+  // open lick gate -------------------------------
+  if (ts > ts_lick_gate_open && ts_lick_gate_open != 0) {
+    lick_gate = 1;
+    ts_lick_gate_open = 0;
+  }
+  
  // close solenoids---------------------------
   if (ts >= ts_sol_offset && ts_sol_offset != 0) {           // if time is after solenoid offset time
     digitalWrite(pinSol[current_spout - 1], LOW);              // set state to low
@@ -181,28 +203,54 @@ void loop() {
 
 
 // licking-----------------------------------------------------------------------------------------------------
- // check state of sensor to see if it is currently touched
-  currtouched = cap.touched(); 
+ if(lick_detection_circuit == 0){ // if using cap sensor --------------------------------------------------------------
+   // check state of sensor to see if it is currently touched
+    currtouched = cap.touched(); 
+  
+    // check to see if touch onset occured
+    if ((currtouched & _BV(current_spout)) && !(lasttouched & _BV(current_spout)) ) { // if touched now but not previously
+      lick = current_spout;                                                           // flag lick
+    }
+  
+   // save current state for comparision with next state
+    lasttouched = currtouched; 
+ }
+
+ if(lick_detection_circuit == 1){ // if using voltage sensor ----------------------------------------------------------
+  // check state of sensor to see if it is currently touched
+   pinLickometer_state = digitalRead(pinLickometer);
 
   // check to see if touch onset occured
-  if ((currtouched & _BV(current_spout)) && !(lasttouched & _BV(current_spout)) ) { // if touched now but not previously
-    lick = current_spout;
-  }
-
- // save current state for comparision with next state
-  lasttouched = currtouched; 
+   if(pinLickometer_state > pinLickometer_state_previous) { // if touched now but not previously
+        lick = current_spout+1;                             // flag lick
+   }
+   
+  // save current state for next loop 
+   pinLickometer_state_previous = pinLickometer_state;
+ }
 
  // programed consequences to licking
   if (lick > 0) { // if lick has occured
-    digitalWrite(pinLickometer_ttl[current_spout - 1], HIGH);                          // turn on ttl for external ts
-    Serial.print(30 + current_spout); Serial.print(" "); Serial.println(ts); // print lick onset
-    ts_lickomter_ttl_off = ts + ttl_duration;                       // set ttl offset time
+    if(lick_gate){      
+      digitalWrite(pinLickometer_ttl[current_spout - 1], HIGH);                          // turn on ttl for external ts
+      Serial.print(30 + current_spout); Serial.print(" "); Serial.println(ts); // print lick onset
+      ts_lickomter_ttl_off = ts + ttl_duration;                       // set ttl offset time
+  
+      digitalWrite(pinSol[current_spout - 1], HIGH);                                    // open solenoid for touched spout
+      Serial.print(40 + current_spout); Serial.print(" "); Serial.println(ts); // print sol opening onset
+      ts_sol_offset = ts + sol_duration[current_spout - 1];                    // set solenoid close time
+    }
 
-    digitalWrite(pinSol[current_spout - 1], HIGH);                                    // open solenoid for touched spout
-    Serial.print(40 + current_spout); Serial.print(" "); Serial.println(ts); // print sol opening onset
-    ts_sol_offset = ts + sol_duration[current_spout - 1];                    // set solenoid close time
+    lick_gate = 0; // close lick gate until tm_lick_latency_min ms have passed
+
+    if (tm_lick_latency_min > sol_duration[lick - 1]) {
+      ts_lick_gate_open = ts + tm_lick_latency_min;
+    } else {
+      ts_lick_gate_open = ts +  sol_duration[lick - 1];
+    }
 
     lick = 0; // reset lick flag to close if statement
+    
   }
 
  // session termination ---------------------------------------------------------------------------------------------------
