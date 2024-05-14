@@ -1,9 +1,9 @@
 /*
 -General notes--------------------------
-* This program is a spout training task, where each lick triggers a solenoid opdning
+* This program is a spout training task, where each lick triggers a solenoid opening
 * brake is engaged, spout is extended, and multi-spout head is rotated at start of session
 * spout is retracted at end of session
-* setup to accomidate setups with multiple spouts
+* setup to accomodate setups with multiple spouts
   ~ see section spout / sol pins & parameters, fill out 1 element per spout on system
 
 -Dependencies---------------------------
@@ -55,7 +55,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   // ttls for external time stamps
   static byte pinSol_ttl = 23; // single output used for all solenoid onset
 
-//capicitance sensor variables -------------------------------------------------------------
+//capacitance sensor variables -------------------------------------------------------------
   Adafruit_MPR121 cap = Adafruit_MPR121();
   uint16_t lasttouched = 0;
   uint16_t currtouched = 0;
@@ -69,7 +69,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static byte servo_retract_retracted_deg = 160;
   unsigned long ts_servo_retract_retracted;
 
-// servo radial varialbe / parameters-------------------------------------------------------
+// servo radial variable / parameters-------------------------------------------------------
   Servo servo_radial;
   
 // flags -------------------------------------------------------------------------------------
@@ -90,7 +90,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long session_end_ts;
 
  // parameters---
-  static int ttl_duration = 5; // duration of tttl pulses for external time stamps (ms)
+  static int ttl_duration = 5; // duration of ttl pulses for external time stamps (ms)
 
 
 // _______________________________________________________________________________________________________________________________________________________________________________
@@ -137,7 +137,7 @@ void setup() {
   delay(250);
   servo_retract.detach();
 
-  // setup capative touch sesnsor 
+  // setup capacitive touch sensor 
   if(lick_detection_circuit == 0){
     if (!cap.begin(0x5A)) {                   // if the sensor is not detected
       Serial.println("MPR121 not detected!"); // print warning (and intentionally crash python program)
@@ -212,7 +212,7 @@ void loop() {
       lick = current_spout;                                                           // flag lick
     }
   
-   // save current state for comparision with next state
+   // save current state for comparison with next state
     lasttouched = currtouched; 
  }
 
@@ -229,8 +229,8 @@ void loop() {
    pinLickometer_state_previous = pinLickometer_state;
  }
 
- // programed consequences to licking
-  if (lick > 0) { // if lick has occured
+ // programmed consequences to licking
+  if (lick > 0) { // if lick has occurred
     if(lick_gate){      
       digitalWrite(pinLickometer_ttl[current_spout - 1], HIGH);                          // turn on ttl for external ts
       Serial.print(30 + current_spout); Serial.print(" "); Serial.println(ts); // print lick onset
@@ -263,7 +263,7 @@ void loop() {
 
 
 // _______________________________________________________________________________________________________________________________________________________________________________
-/// functions & interupts_________________________________________________________________________________________________________________________________________________________
+/// functions & interrupts_________________________________________________________________________________________________________________________________________________________
 /// end session -------------------------------------------------------------------------------------------
 void fun_end_session() {
   for (uint8_t i_sol = 0; i_sol < num_spouts; i_sol++) { // for each solenoid
