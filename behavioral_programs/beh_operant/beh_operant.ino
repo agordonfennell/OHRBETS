@@ -59,9 +59,9 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static byte servo_retract_extended_degs[] = {180,180,180,180,180};
   static byte pinLickometer_ttl[] =           { 22, 22, 22, 22, 22};
 
-  byte current_spout = 1; // set spout for session (1 to n, where n is the nubmer of spouts on the system; used to index each vector above)
+  byte current_spout = 1; // set spout for session (1 to n, where n is the number of spouts on the system; used to index each vector above)
 
- // external TTL vecotrs (each element will correspond to a TTL output, see format above)
+ // external TTL vectors (each element will correspond to a TTL output, see format above)
   static byte num_extTTL = 3;
   static byte pinExtTTL[] = {26, 27, 28, 29};
   static byte current_extTTL = 1; //  set TTL for session
@@ -71,13 +71,13 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static long tm_switch_reinforcer_availability_step = -1; // switch between reinforcer being available or witheld every x ms (-1: no switching)
 
  // rotation & schedule ------
-  static int rotary_resoltion = 32; // number of rotation pulses per down sampled rotation pulse(raw PPR = 1024, rotary resolution of 16 -> 64 down sampled pulses per rotation (1024 / 16 = 64))
+  static int rotary_resolution = 32; // number of rotation pulses per down sampled rotation pulse(raw PPR = 1024, rotary resolution of 16 -> 64 down sampled pulses per rotation (1024 / 16 = 64))
   static boolean schedule = 0;      // 0: fixed ratio, 1: progressive ratio
-  int current_ratio = 8;            // number of down sampled rotation pulses per reward (absolute rotation will depend on both current_ratio and rotary_resolution, e.g. rotary resolution of 16(64 down sampled pulses per rotaiton), and a current_ratio of 32 means 1/2 rotation per reward)
+  int current_ratio = 8;            // number of down sampled rotation pulses per reward (absolute rotation will depend on both current_ratio and rotary_resolution, e.g. rotary resolution of 16(64 down sampled pulses per rotation), and a current_ratio of 32 means 1/2 rotation per reward)
   
-  static int pr_step = 8;                   // step in number of down sampled rotation pusles per reward
-  static double pr_function = 1.25;         // 1: linear increase, >1: logorithmic (1.25 aproximates Richardson and Roberts (1996)  [5e(R*0.2)] - 5 )
-  static unsigned long pr_timeout = 600000; // amount of time wihtout a response before session ends (ms)
+  static int pr_step = 8;                   // step in number of down sampled rotation pulses per reward
+  static double pr_function = 1.25;         // 1: linear increase, >1: logorithmic (1.25 approximates Richardson and Roberts (1996)  [5e(R*0.2)] - 5 )
+  static unsigned long pr_timeout = 600000; // amount of time without a response before session ends (ms)
 
  // pre access delay ---------
   static unsigned long brake_delay = 250;         // minimum delay from brake onset to access period start (allows for brake to fully engage)
@@ -121,7 +121,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static byte pinRotation_active_ttl = 50;
   static byte pinRotation_inactive_ttl = 48;
 
-//capicitance sensor variables
+//capacitance sensor variables
   Adafruit_MPR121 cap = Adafruit_MPR121();
   uint16_t lasttouched = 0;
   uint16_t currtouched = 0;
@@ -141,13 +141,13 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static int detach_servo_retract_step = 100; // time in ms to allow for the servo to travel
   unsigned long ts_servo_retract_retracted;
 
-// servo radial varialbe / parameters-------------------------------------------------------
+// servo radial variable / parameters-------------------------------------------------------
   Servo servo_radial;
   
 // rotary encoder variables / parameters ----------------------------------------------------
  // variables---
-  volatile boolean rotation_right_flag = 0; // interupt flack for rightward rotation
-  volatile boolean rotation_left_flag = 0;  // interupt flack for leftward  rotation
+  volatile boolean rotation_right_flag = 0; // interrupt flack for rightward rotation
+  volatile boolean rotation_left_flag = 0;  // interrupt flack for leftward  rotation
   
   volatile int rotation_active_counter_trial = 0;   // full resolution rotation counter
   volatile int rotation_inactive_counter_trial = 0; // full resolution rotation counter
@@ -155,8 +155,8 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   volatile int rotation_active = 0;   // downsampled rotation counter
   volatile int rotation_inactive = 0; // downsampled rotation counter
 
-  volatile byte aFlag = 0; // let's us know when we're expecting a rising edge on pinRotaryEncoderA to signal that the encoder has arrived at a detent
-  volatile byte bFlag = 0; // let's us know when we're expecting a rising edge on pinRotaryEncoderB to signal that the encoder has arrived at a detent (opposite direction to when aFlag is set)
+  volatile byte aFlag = 0; // lets us know when we're expecting a rising edge on pinRotaryEncoderA to signal that the encoder has arrived at a detent
+  volatile byte bFlag = 0; // lets us know when we're expecting a rising edge on pinRotaryEncoderB to signal that the encoder has arrived at a detent (opposite direction to when aFlag is set)
   volatile byte reading = 0; //somewhere to store the direct values we read from our interrupt pins before checking to see if we have moved a whole detent
   
   uint8_t maskA;  // mask for reading pin A
@@ -205,7 +205,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long session_end_ts;
 
  // parameters---
-  static int ttl_duration = 5; // duration of tttl pulses for external time stamps (ms)
+  static int ttl_duration = 5; // duration of ttl pulses for external time stamps (ms)
   
 
 // _______________________________________________________________________________________________________________________________________________________________________________
@@ -242,7 +242,7 @@ void setup() {
   pinMode(pinRotation_inactive_ttl, OUTPUT);
 
  // rotary encoder ------------------------------
- // setup interupts for the rotary encoder 
+ // setup interrupts for the rotary encoder 
   attachInterrupt(digitalPinToInterrupt(pinRotaryEncoderB),fpinRotaryEncoderB,RISING); // interrupt on pinRotaryEncoderA
   attachInterrupt(digitalPinToInterrupt(pinRotaryEncoderA),fpinRotaryEncoderA,RISING); // interrupt on pinRotaryEncoderB
   
@@ -275,7 +275,7 @@ void setup() {
   delay(250);
   servo_retract.detach();
 
-  // setup capative touch sesnsor ---------------
+  // setup capacitive touch sensor ---------------
   if(lick_detection_circuit == 0){
     if (!cap.begin(0x5A)) {                   // if the sensor is not detected
       Serial.println("MPR121 not detected!"); // print warning (and intentionally crash python program)
@@ -288,11 +288,11 @@ void setup() {
     delay(50);
   }
 
- // wait for serial command before initating session---------------------------------------------------------------------
+ // wait for serial command before initiating session---------------------------------------------------------------------
   while (Serial.available() <= 0) {} // wait for serial input to start session
   delay(100);
 
- // save start time and send ttl to initate scope
+ // save start time and send ttl to initiate scope
   ts_start=millis();  
 }
 
@@ -457,7 +457,7 @@ void loop() {
       lick = current_spout;                                                           // flag lick
     }
   
-   // save current state for comparision with next state
+   // save current state for comparison with next state
     lasttouched = currtouched; 
  }
 
@@ -474,12 +474,12 @@ void loop() {
    pinLickometer_state_previous = pinLickometer_state;
  }
 
- // programed consequences to licking
-  if (lick > 0) { // if lick has occured
+ // programmed consequences to licking
+  if (lick > 0) { // if lick has occurred
     if(lick_gate){
         Serial.print(30 + current_spout); Serial.print(" "); Serial.println(ts); // print lick onset
         digitalWrite(pinLickometer_ttl[current_spout-1],HIGH);                    // turn on ttl for external ts
-        ts_lickomter_ttl_off = ts + ttl_duration;                // set ttl offset time
+        ts_lickometer_ttl_off = ts + ttl_duration;                // set ttl offset time
 
         lick_gate = 0; // close lick gate until tm_lick_latency_min ms have passed
         
@@ -515,7 +515,7 @@ void loop() {
    }
    
  // active rotation ----------------------------------------------------------------------------
-   if(rotation_active_counter_trial >= rotary_resoltion){ // down sample rotation counter
+   if(rotation_active_counter_trial >= rotary_resolution){ // down sample rotation counter
     if(rotation_gate && session_reinforcer_availability == 0){
       rotation_active++; // increase active counter
       
@@ -537,7 +537,7 @@ void loop() {
       
       } else { // if rotation gate is closed (during access period or time out)
         
-        Serial.print(83); Serial.print(" "); Serial.println(ts); // print active rotation reaching criteria during brakeed or non reinforced periods
+        Serial.print(83); Serial.print(" "); Serial.println(ts); // print active rotation reaching criteria during braked or non reinforced periods
         
       }
       rotation_active_counter_trial = 0; // reset rotation counter to close if statement
@@ -569,7 +569,7 @@ void loop() {
       
      } else { // if rotation gate is closed (during access period or time out)
       
-      Serial.print(73); Serial.print(" "); Serial.println(ts); // print inactive rotation during brakeed or non reinforced periods
+      Serial.print(73); Serial.print(" "); Serial.println(ts); // print inactive rotation during braked or non reinforced periods
      }
      rotation_inactive_counter_trial = 0; // reset rotation counter to close if statement
    }
@@ -602,7 +602,7 @@ void loop() {
         Serial.print(102);   Serial.print(" "); Serial.println(current_ratio);  // print current ratio
         
         if(pr_function > 1){ // if logorithmic increase
-          pr_step_current = round(pr_step_current*pr_function);   // increase current setp and round
+          pr_step_current = round(pr_step_current*pr_function);   // increase current step and round
           }
         }
       } 
@@ -686,7 +686,7 @@ void loop() {
           Serial.print(102);   Serial.print(" "); Serial.println(current_ratio);  // print current ratio
           
           if(pr_function > 1){ // if logorithmic increase
-            pr_step_current = round(pr_step_current*pr_function);   // increase current setp and round
+            pr_step_current = round(pr_step_current*pr_function);   // increase current step and round
             }
           }
       }
@@ -698,7 +698,7 @@ void loop() {
         ts_tone_start = 0;
       }
       
-     // start brakeed period and change extTTL state--
+     // start braked period and change extTTL state--
       if(ts >= ts_access_start && ts_access_start != 0){
         ts_access_start = 0;
 
@@ -716,7 +716,7 @@ void loop() {
         ts_to_end = ts_extTTL_offset + duration_additional_to;                   // set end of to time
       }
 
-     // change extTTL state & end brakeed peroid---
+     // change extTTL state & end braked period---
       if(ts >= ts_extTTL_offset && ts_extTTL_offset != 0){
         ts_extTTL_offset = 0; 
         
@@ -792,8 +792,8 @@ void loop() {
 
 
 // _______________________________________________________________________________________________________________________________________________________________________________
-/// functions & interupts_________________________________________________________________________________________________________________________________________________________
-// rotary encoder interupts ----------------------------------------------
+/// functions & interrupts_________________________________________________________________________________________________________________________________________________________
+// rotary encoder interrupts ----------------------------------------------
 void fpinRotaryEncoderB(){ //---------------------------------------------
   noInterrupts();
   reading = *port & maskAB;
