@@ -4,17 +4,17 @@
 * The ratio or reinforcement can be either fixed or progressive
 * The reinforcer can be either liquid reward (1 or more solenoid openings) or extTTL stimulation (on or off)
 * This program includes an optional brake control to limit the subjects ability to make operant responses
-* This program includes an optional retractable spout to limit the subjects ability to make consumitory responses
+* This program includes an optional retractable spout to limit the subjects ability to make consummatory responses
 * Solenoid sequence onset starts with spout extension
-* access period and solenoid  opening are independent
+* Access period and solenoid  opening are independent
   * check to ensure that the access period is longer than (sol_duration + inter_sol_time) x num_sol
-* tone and access periods are on independent timing
+* Tone and access periods are on independent timing
 * All events (except dynamic parameters) that occur during the arduino program are transmitted via serial with an id and time stamp in ms (2 columns)
   * If you adapt this program and add new events, make sure to follow the 2 column approach to avoid conflicts with
     existing programs
   * Dynamic parameters are represented by 2 rows, the first row is the time stamp for the parameter, and the second is the current parameter
     the column will always contain the id for the dynamic parameter
-    - it is critical that the order is maintaied
+    - it is critical that the order is maintained
 
 -Dependencies---------------------------
 This program uses multiple dependencies (see protocol: for instructions on installation)
@@ -45,7 +45,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static boolean inactive_brake = 1;           // 0: no brake following inactive response, 1: brake for equivalent time to active response
   static boolean session_retract = 1;          // 0: no retractable spout, 1: retractable spout
   boolean session_contingency_current = 0;     // 0: right = active, 1: left = active
-  boolean session_reinforcer_availability = 0; // 0: availible, 1: not availible
+  boolean session_reinforcer_availability = 0; // 0: available, 1: not available
   static boolean session_reinforcer = 0;       // 0: liquid, 1: ttl out (laser, or other external hardware)
   static boolean session_setback = 1;          // 0: no setback, 1: setback to zero, 2: setback to negative
   static boolean extTTL_posneg = 0;            // 0: pos reinforcement (resp->on), 1: neg reinforcement (resp->off)
