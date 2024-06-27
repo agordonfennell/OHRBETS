@@ -1,14 +1,14 @@
 /*
 -General notes--------------------------
-* This program is a retractable spout trianing & pavlovian conditioning task
-* brake is engaged, spout is extended, and multi-spout head is rotated at start of session
-* set number of trials consisting of
+* This program is a retractable spout training & pavlovian conditioning task
+* Brake is engaged, spout is extended, and multi-spout head is rotated at start of session
+* Set number of trials consisting of
   - tone (optional)
   - spout extension for set period of time then retraction (optional)
   - delivery of a defined number of solenoid openings
   - random inter-trial-interval
   - relative timing between tone and spout extension / liquid delivery set using tone_to_access_delay
-* setup to accomidate setups with multiple spouts
+* setup to accomodate setups with multiple spouts
   ~ see section spout / sol pins & parameters, fill out 1 element per spout on system
 
 -Dependencies---------------------------
@@ -82,7 +82,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static byte pinSol_ttl = 23;
   static byte pinTone_ttl = 24;
 
-//capicitance sensor variables
+//capacitance sensor variables
   Adafruit_MPR121 cap = Adafruit_MPR121();
   uint16_t lasttouched = 0;
   uint16_t currtouched = 0;
@@ -101,7 +101,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   static int detach_servo_retract_step = 200; // time in ms to allow for the servo to travel
   unsigned long ts_servo_retract_retracted;
 
-// servo radial varialbe / parameters-------------------------------------------------------
+// servo radial variable / parameters-------------------------------------------------------
   Servo servo_radial;
 
 // flags -------------------------------------------------------------------------------------
@@ -130,7 +130,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long ts_sol_onset;
   unsigned long ts_sol_ttl_off;
   unsigned long ts_tone_ttl_off;
-  unsigned long ts_lickomter_ttl_off; 
+  unsigned long ts_lickometer_ttl_off; 
   unsigned long ts_lick_gate_open = 0;
   boolean flag_access_complete;
   boolean flag_tone_complete;
@@ -140,7 +140,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long session_end_ts;
 
  // parameters---
-  static int ttl_duration = 5; // duration of tttl pulses for external time stamps (ms)
+  static int ttl_duration = 5; // duration of ttl pulses for external time stamps (ms)
   
 
 // _______________________________________________________________________________________________________________________________________________________________________________
@@ -190,7 +190,7 @@ void setup() {
   delay(250);
   servo_retract.detach();
 
-  // setup capative touch sesnsor ---------------
+  // setup capacitive touch sensor ---------------
   if(lick_detection_circuit == 0){
     if (!cap.begin(0x5A)) {                   // if the sensor is not detected
       Serial.println("MPR121 not detected!"); // print warning (and intentionally crash python program)
@@ -207,7 +207,7 @@ void setup() {
   while (Serial.available() <= 0) {} // wait for serial input to start session
   delay(100);
 
- // save start time and send ttl to initate scope
+ // save start time and send ttl to initiate scope
   ts_start=millis();  
 }
 
@@ -240,9 +240,9 @@ void loop() {
 
  // turn off ttls for external time stamps ------------------------
  // lick---
-  if(ts>=ts_lickomter_ttl_off && ts_lickomter_ttl_off!=0){
+  if(ts>=ts_lickometer_ttl_off && ts_lickometer_ttl_off!=0){
     digitalWrite(pinLickometer_ttl[current_spout-1],LOW); // write ttl low
-    ts_lickomter_ttl_off = 0;            // reset off time to close if statement
+    ts_lickometer_ttl_off = 0;            // reset off time to close if statement
   }
   
  // solenoid---
@@ -298,12 +298,12 @@ void loop() {
    // check state of sensor to see if it is currently touched
     currtouched = cap.touched(); 
   
-    // check to see if touch onset occured
+    // check to see if touch onset occurred
     if ((currtouched & _BV(current_spout)) && !(lasttouched & _BV(current_spout)) ) { // if touched now but not previously
       lick = current_spout;                                                           // flag lick
     }
   
-   // save current state for comparision with next state
+   // save current state for comparison with next state
     lasttouched = currtouched; 
  }
 
@@ -311,7 +311,7 @@ void loop() {
   // check state of sensor to see if it is currently touched
    pinLickometer_state = digitalRead(pinLickometer);
 
-  // check to see if touch onset occured
+  // check to see if touch onset occurred
    if(pinLickometer_state > pinLickometer_state_previous) { // if touched now but not previously
         lick = current_spout+1;                             // flag lick
    }
@@ -320,12 +320,12 @@ void loop() {
    pinLickometer_state_previous = pinLickometer_state;
  }
 
- // programed consequences to licking
+ // programmed consequences to licking
   if (lick > 0) { // if lick has occured
     if(lick_gate){
         Serial.print(30 + current_spout); Serial.print(" "); Serial.println(ts); // print lick onset
         digitalWrite(pinLickometer_ttl[current_spout-1],HIGH);                    // turn on ttl for external ts
-        ts_lickomter_ttl_off = ts + ttl_duration;                // set ttl offset time
+        ts_lickometer_ttl_off = ts + ttl_duration;                // set ttl offset time
 
         lick_gate = 0; // close lick gate until tm_lick_latency_min ms have passed
         
@@ -415,7 +415,7 @@ void loop() {
 
 
 // _______________________________________________________________________________________________________________________________________________________________________________
-/// functions & interupts_________________________________________________________________________________________________________________________________________________________
+/// functions & interrupts_________________________________________________________________________________________________________________________________________________________
 
 // servos ----------------------------------------------------------------
 void fun_servo_retract_extended(){ //-------------------------------------

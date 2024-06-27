@@ -81,9 +81,9 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   
   boolean initiate_spout_seq = 0;
   unsigned long move_servo_retract_retracted_ts;
-  static byte detach_buffer = 100; // aditional latency prior to next servo onset
+  static byte detach_buffer = 100; // additional latency prior to next servo onset
   
- //capicitance sensor variables
+ //capacitance sensor variables
   Adafruit_MPR121 cap = Adafruit_MPR121();
   uint16_t lasttouched = 0;
   uint16_t currtouched = 0;
@@ -131,7 +131,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long ts_sol_offset;
   unsigned long ts_sol_onset;
   unsigned long ts_sol_ttl_off;
-  unsigned long ts_lickomter_ttl_off;
+  unsigned long ts_lickometer_ttl_off;
   unsigned long ts_lick_gate_open = 0;
   
   volatile unsigned long brake_spout_delay; // random delay length between brake and access period
@@ -139,7 +139,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long session_end_ts;
   
  // parameters---
-  static int ttl_duration = 5; // duration of tttl pulses for external time stamps (ms)
+  static int ttl_duration = 5; // duration of ttl pulses for external time stamps (ms)
   
 
 // _______________________________________________________________________________________________________________________________________________________________________________
@@ -201,7 +201,7 @@ void setup() {
     }
   }
 
-  // setup capative touch sesnsor ---------------
+  // setup capacitive touch sensor ---------------
   if(lick_detection_circuit == 0){
     if (!cap.begin(0x5A)) {                   // if the sensor is not detected
       Serial.println("MPR121 not detected!"); // print warning (and intentionally crash python program)
@@ -354,7 +354,7 @@ void loop() {
       }
     }
 
-  // save current state for comparision with next state
+  // save current state for comparison with next state
    lasttouched = currtouched;
  }
 
@@ -371,7 +371,7 @@ void loop() {
    pinLickometer_state_previous = pinLickometer_state;
  }
 
-  // programed consequences to licking
+  // programmed consequences to licking
   if (lick > 0) { // if lick has occured
     if (lick_gate){
       Serial.print(30 + lick); Serial.print(" "); Serial.println(ts);  // print lick onset
@@ -386,7 +386,7 @@ void loop() {
       Serial.print(40 + lick); Serial.print(" "); Serial.println(ts); // print sol opening onset
       
       ts_sol_offset = ts + sol_duration[lick - 1];                    // set solenoid close time
-      ts_lickomter_ttl_off = ts + ttl_duration;                       // set ttl offset time
+      ts_lickometer_ttl_off = ts + ttl_duration;                       // set ttl offset time
 
       if (tm_lick_latency_min > sol_duration[lick - 1]) {
         ts_lick_gate_open = ts + tm_lick_latency_min;
