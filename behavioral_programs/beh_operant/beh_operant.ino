@@ -39,7 +39,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 // session parameters *************************************************************************************************************
  // general parameters -------
   static unsigned long session_duration = 1800000; // session duration (ms) (note: avoid using formula here)
-  static byte lick_detection_circuit = 0;      // 0: cap sensor, 1: voltage sensor
+  static byte lick_detection_circuit = 1;      // 0: cap sensor, 1: voltage sensor
   static int tm_lick_latency_min = 50;         // minimum latency between licks
   static boolean session_brake = 1;            // 0: no brake during access period, 1: brake engaged during access period
   static boolean inactive_brake = 1;           // 0: no brake following inactive response, 1: brake for equivalent time to active response
@@ -129,7 +129,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
 
 // servo brake variables / parameters ------------------------------------------------------
   Servo servo_brake;  // create servo object to control a servo
-  static byte servo_brake_engaged_deg = 15;
+  static byte servo_brake_engaged_deg = 40;
   static byte servo_brake_disengaged_deg = 0;
   unsigned long detach_servo_brake_ts = 0;
   static int detach_servo_brake_step = 100; // time in ms to allow for the servo to travel
@@ -189,7 +189,7 @@ This program uses multiple dependencies (see protocol: for instructions on insta
   unsigned long ts_sol_onset;
   unsigned long ts_sol_ttl_off;
   unsigned long ts_extTTL_offset;
-  unsigned long ts_lickomter_ttl_off; 
+  unsigned long ts_lickometer_ttl_off; 
   unsigned long ts_lick_gate_open = 0;
   unsigned long ts_rotation_active_ttl_off = 0;
   unsigned long ts_rotation_inactive_ttl_off = 0;
@@ -331,9 +331,9 @@ void loop() {
 
  // turn off ttls for external time stamps ------------------------
  // lick---
-  if(ts>=ts_lickomter_ttl_off && ts_lickomter_ttl_off!=0){
+  if(ts>=ts_lickometer_ttl_off && ts_lickometer_ttl_off!=0){
     digitalWrite(pinLickometer_ttl[current_spout - 1],LOW); // write ttl low
-    ts_lickomter_ttl_off = 0;            // reset off time to close if statement
+    ts_lickometer_ttl_off = 0;            // reset off time to close if statement
   }
   
  // solenoid---
@@ -358,7 +358,7 @@ void loop() {
   if(session_end_ts == 0){
     Serial.print(1);   Serial.print(" "); Serial.println(ts);                          delay(3);// print start session
     Serial.print(100); Serial.print(" "); Serial.println(session_duration);            delay(3);// print session duration
-    Serial.print(101); Serial.print(" "); Serial.println(rotary_resoltion);            delay(3);// print rotary_resoltion
+    Serial.print(101); Serial.print(" "); Serial.println(rotary_resolution);            delay(3);// print rotary_resolution
     Serial.print(103); Serial.print(" "); Serial.println(session_brake);               delay(3);// print session_brake
     Serial.print(104); Serial.print(" "); Serial.println(session_retract);             delay(3);// print session_retract
     Serial.print(107); Serial.print(" "); Serial.println(session_reinforcer);          delay(3);// print session_reinforcer
@@ -544,7 +544,7 @@ void loop() {
    }
 
  // inactive rotation --------------------------------------------------------------------------
-   if(rotation_inactive_counter_trial >= rotary_resoltion){ // down sample rotation counter
+   if(rotation_inactive_counter_trial >= rotary_resolution){ // down sample rotation counter
     if(rotation_gate && session_reinforcer_availability == 0){
       rotation_inactive++;
   
